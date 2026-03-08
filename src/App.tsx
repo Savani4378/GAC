@@ -1328,6 +1328,7 @@ const ProductDetailsPage = ({ products, user }: { products: Product[], user: any
 const LoginPage = ({ setUser }: { setUser: any }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -1343,7 +1344,7 @@ const LoginPage = ({ setUser }: { setUser: any }) => {
       localStorage.setItem('agro_user', JSON.stringify(data.user));
       navigate(data.user.role === 'admin' ? '/admin' : '/');
     } else {
-      alert(data.error);
+      setError('login failed username/password wrong');
     }
   };
 
@@ -1351,6 +1352,7 @@ const LoginPage = ({ setUser }: { setUser: any }) => {
     <div className="max-w-md mx-auto py-20 px-4">
       <div className="bg-white p-10 rounded-3xl shadow-sm border border-gray-100">
         <h1 className="text-3xl font-black text-center mb-8">Welcome Back</h1>
+        {error && <div className="bg-red-100 text-red-700 p-4 rounded-xl mb-6 text-sm font-bold">{error}</div>}
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
