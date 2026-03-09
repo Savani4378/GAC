@@ -390,7 +390,7 @@ const Footer = () => (
             <li>
               Phone: <a href="tel:+919712999082" className="hover:text-white transition-colors">+91 97129 99082</a> | <a href="tel:+919925457719" className="hover:text-white transition-colors">+91 99254 57719</a>
             </li>
-            <li>Email: vivekprajapati4894@gmail.com</li>
+            <li>Email: gangeshwaragrocenter@gmail.com</li>
           </ul>
         </div>
       </div>
@@ -821,7 +821,7 @@ const ContactPage = () => {
               <div className="bg-white/10 p-3 rounded-xl"><Mail className="w-5 h-5" /></div>
               <div>
                 <p className="text-xs text-white/60 uppercase font-bold">Email</p>
-                <p className="text-sm">{contact?.email || "vivekprajapati4894@gmail.com"}</p>
+                <p className="text-sm">{contact?.email || "gangeshwaragrocenter@gmail.com"}</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -1195,7 +1195,7 @@ const ForgotPasswordPage = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-primary outline-none transition-all"
-              placeholder="vivekprajapati4894@gmail.com"
+              placeholder="gangeshwaragrocenter@gmail.com"
               required
             />
           </div>
