@@ -412,12 +412,6 @@ const Home = ({ products, banners }: { products: Product[], banners: Banner[] })
     }
   }, [banners]);
 
-  const categories = [
-    { name: 'Seeds', icon: <Sprout className="w-8 h-8" />, color: 'bg-green-100 text-green-700', desc: 'High-yield hybrid seeds' },
-    { name: 'Fertilizers', icon: <Droplets className="w-8 h-8" />, color: 'bg-blue-100 text-blue-700', desc: 'Organic & chemical nutrients' },
-    { name: 'Pesticides', icon: <Bug className="w-8 h-8" />, color: 'bg-orange-100 text-orange-700', desc: 'Effective crop protection' },
-  ];
-
   return (
     <div className="space-y-16 pb-20">
       {/* Hero Slider */}
@@ -463,27 +457,6 @@ const Home = ({ products, banners }: { products: Product[], banners: Banner[] })
             <h1 className="text-4xl font-bold text-white">Welcome to Gangeshwar Agro</h1>
           </div>
         )}
-      </section>
-
-      {/* Categories */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900">Shop by Category</h2>
-          <p className="text-gray-500 mt-2">Everything you need for a bountiful harvest</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {categories.map((cat) => (
-            <Link key={cat.name} to={`/products/${cat.name}`} className="group">
-              <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-center transition-all group-hover:shadow-md group-hover:border-primary/20">
-                <div className={`inline-flex p-5 rounded-2xl mb-6 ${cat.color} transition-transform group-hover:scale-110`}>
-                  {cat.icon}
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{cat.name}</h3>
-                <p className="text-gray-500 text-sm">{cat.desc}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
       </section>
 
       {/* Featured Products */}
