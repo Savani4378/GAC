@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
 app.use(express.json());
 
@@ -99,11 +99,21 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS social_links (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     facebook TEXT,
+    facebook_visible INTEGER DEFAULT 1,
     instagram TEXT,
+    instagram_visible INTEGER DEFAULT 1,
     twitter TEXT,
+    twitter_visible INTEGER DEFAULT 1,
     whatsapp TEXT,
+    whatsapp_visible INTEGER DEFAULT 1,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  // Add columns if they don't exist (for existing databases)
+  try { db.prepare("ALTER TABLE social_links ADD COLUMN facebook_visible INTEGER DEFAULT 1").run(); } catch(e) {}
+  try { db.prepare("ALTER TABLE social_links ADD COLUMN instagram_visible INTEGER DEFAULT 1").run(); } catch(e) {}
+  try { db.prepare("ALTER TABLE social_links ADD COLUMN twitter_visible INTEGER DEFAULT 1").run(); } catch(e) {}
+  try { db.prepare("ALTER TABLE social_links ADD COLUMN whatsapp_visible INTEGER DEFAULT 1").run(); } catch(e) {}
 `);
 
 // Seed About and Contact if not exists
@@ -440,16 +450,52 @@ app.put("/api/contact", (req, res) => {
 // Social Links
 app.get("/api/social-links", (req, res) => {
   const links = db.prepare("SELECT * FROM social_links ORDER BY id DESC LIMIT 1").get();
-  res.json(links || { facebook: "", instagram: "", twitter: "", whatsapp: "" });
+  res.json(links || { 
+    facebook: "", facebook_visible: 1, 
+    instagram: "", instagram_visible: 1, 
+    twitter: "", twitter_visible: 1, 
+    whatsapp: "", whatsapp_visible: 1 
+  });
 });
 
 app.put("/api/social-links", (req, res) => {
-  const { facebook, instagram, twitter, whatsapp } = req.body;
+  const { 
+    facebook, facebook_visible, 
+    instagram, instagram_visible, 
+    twitter, twitter_visible, 
+    whatsapp, whatsapp_visible 
+  } = req.body;
   const exists = db.prepare("SELECT id FROM social_links LIMIT 1").get();
   if (exists) {
-    db.prepare("UPDATE social_links SET facebook = ?, instagram = ?, twitter = ?, whatsapp = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(facebook, instagram, twitter, whatsapp, exists.id);
+    db.prepare(`
+      UPDATE social_links 
+      SET facebook = ?, facebook_visible = ?, 
+          instagram = ?, instagram_visible = ?, 
+          twitter = ?, twitter_visible = ?, 
+          whatsapp = ?, whatsapp_visible = ?, 
+          updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `).run(
+      facebook, facebook_visible ? 1 : 0, 
+      instagram, instagram_visible ? 1 : 0, 
+      twitter, twitter_visible ? 1 : 0, 
+      whatsapp, whatsapp_visible ? 1 : 0, 
+      exists.id
+    );
   } else {
-    db.prepare("INSERT INTO social_links (facebook, instagram, twitter, whatsapp) VALUES (?, ?, ?, ?)").run(facebook, instagram, twitter, whatsapp);
+    db.prepare(`
+      INSERT INTO social_links (
+        facebook, facebook_visible, 
+        instagram, instagram_visible, 
+        twitter, twitter_visible, 
+        whatsapp, whatsapp_visible
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      facebook, facebook_visible ? 1 : 0, 
+      instagram, instagram_visible ? 1 : 0, 
+      twitter, twitter_visible ? 1 : 0, 
+      whatsapp, whatsapp_visible ? 1 : 0
+    );
   }
   res.json({ success: true });
 });
