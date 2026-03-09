@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
-import { User, Users, Menu, X, Leaf, Sprout, Droplets, Bug, Trash2, Plus, Edit, LogOut, ChevronRight, Star, Mail, Phone, Search, ShoppingBag, Image as ImageIcon, LayoutDashboard } from 'lucide-react';
+import { User, Users, Menu, X, Leaf, Sprout, Droplets, Bug, Trash2, Plus, Edit, LogOut, ChevronRight, Star, Mail, Phone, Search, ShoppingBag, Image as ImageIcon, LayoutDashboard, Shield, BarChart3, PieChart as PieChartIcon, Activity, Eye, EyeOff } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
+  PieChart, Pie, Cell, AreaChart, Area, ComposedChart, Line, ScatterChart, Scatter
+} from 'recharts';
 
 // --- Types ---
 interface Product {
@@ -14,6 +18,7 @@ interface Product {
   brand: string;
   images: string[];
   status: string;
+  note?: string;
 }
 
 interface Banner {
@@ -22,6 +27,7 @@ interface Banner {
   description: string;
   image_url: string;
   link: string;
+  status: string;
 }
 
 interface Review {
@@ -36,7 +42,7 @@ interface Review {
 
 // --- Components ---
 
-const Navbar = ({ user, onLogout, products }: { user: any, onLogout: () => void, products: Product[] }) => {
+const Navbar = ({ user, onLogout, products, wishlistCount, totalPrice }: { user: any, onLogout: () => void, products: Product[], wishlistCount: number, totalPrice: number }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isServicesOpen, setIsServicesOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,7 +64,7 @@ const Navbar = ({ user, onLogout, products }: { user: any, onLogout: () => void,
   const navLinks = [
     { name: 'Home', path: '/' },
     { name: 'About', path: '/about' },
-    { name: 'Contact Us', path: '/contact' },
+    { name: 'Contact', path: '/contact' },
   ];
 
   const serviceLinks = [
@@ -90,7 +96,9 @@ const Navbar = ({ user, onLogout, products }: { user: any, onLogout: () => void,
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20 items-center gap-4">
           <Link to="/" className="flex items-center space-x-2 shrink-0">
-            <Leaf className="text-primary w-8 h-8" />
+            <img src="/2.png" alt="Gangeshwar Agro Logo" className="w-10 h-10 object-contain" onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://cdn-icons-png.flaticon.com/512/628/628283.png'; // Fallback if logo.png is empty/missing
+            }} />
             <span className="text-2xl font-bold text-primary tracking-tight hidden sm:block">Gangeshwar Agro</span>
           </Link>
 
@@ -210,11 +218,20 @@ const Navbar = ({ user, onLogout, products }: { user: any, onLogout: () => void,
                 location.pathname === '/contact' ? 'text-primary' : 'text-gray-600'
               }`}
             >
-              Contact Us
+              Contact
             </Link>
           </div>
 
           <div className="hidden md:flex items-center space-x-6 shrink-0">
+            {/* Wishlist Summary */}
+            <Link to="/wishlist" className="flex flex-col items-end mr-2 group">
+              <div className="flex items-center space-x-2 text-primary group-hover:scale-110 transition-transform">
+                <Star className="w-5 h-5 fill-current" />
+                <span className="text-sm font-bold">{wishlistCount}</span>
+              </div>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider group-hover:text-primary transition-colors">Total: ₹{totalPrice}</span>
+            </Link>
+
             {user ? (
               <div className="flex items-center space-x-4">
                 <Link to={user.role === 'admin' ? '/admin' : '/profile'} className="flex items-center space-x-1 text-gray-600 hover:text-primary">
@@ -259,6 +276,18 @@ const Navbar = ({ user, onLogout, products }: { user: any, onLogout: () => void,
                 Home
               </Link>
 
+              <Link
+                to="/wishlist"
+                onClick={() => setIsOpen(false)}
+                className="block px-3 py-4 text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50 rounded-lg flex items-center justify-between"
+              >
+                <div className="flex items-center space-x-3">
+                  <Star className="w-5 h-5" />
+                  <span>My Wishlist</span>
+                </div>
+                <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-bold">{wishlistCount}</span>
+              </Link>
+
               {/* Mobile Services Section */}
               <div className="px-3 py-4">
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Services</p>
@@ -289,7 +318,7 @@ const Navbar = ({ user, onLogout, products }: { user: any, onLogout: () => void,
                 onClick={() => setIsOpen(false)}
                 className="block px-3 py-4 text-base font-medium text-gray-700 hover:text-primary hover:bg-gray-50 rounded-lg"
               >
-                Contact Us
+                Contact
               </Link>
               {!user ? (
                 <Link
@@ -319,7 +348,9 @@ const Footer = () => (
       <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
         <div className="space-y-4">
           <div className="flex items-center space-x-2">
-            <Leaf className="text-white w-8 h-8" />
+            <img src="/logo.png" alt="Gangeshwar Agro Logo" className="w-10 h-10 object-contain brightness-0 invert" onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://cdn-icons-png.flaticon.com/512/628/628283.png';
+            }} />
             <span className="text-2xl font-bold tracking-tight">Gangeshwar Agro</span>
           </div>
           <p className="text-gray-300 text-sm leading-relaxed">
@@ -339,11 +370,11 @@ const Footer = () => (
           <h3 className="text-lg font-semibold mb-6">Support</h3>
           <ul className="space-y-3 text-gray-300 text-sm">
             <li><Link to="/about" className="hover:text-white transition-colors">About Us</Link></li>
-            <li><Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
+            <li><Link to="/contact" className="hover:text-white transition-colors">Contact</Link></li>
           </ul>
         </div>
         <div>
-          <h3 className="text-lg font-semibold mb-6">Contact Us</h3>
+          <h3 className="text-lg font-semibold mb-6">Contact</h3>
           <ul className="space-y-3 text-gray-300 text-sm">
             <li>
               <a 
@@ -370,11 +401,23 @@ const Footer = () => (
   </footer>
 );
 
-const ProductCard = ({ product }: { product: Product, key?: React.Key }) => (
+const ProductCard = ({ product, onWishlistToggle, isInWishlist }: { product: Product, onWishlistToggle?: (p: Product) => void, isInWishlist?: boolean, key?: React.Key }) => (
   <motion.div
     whileHover={{ y: -5 }}
-    className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 group"
+    className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 group relative"
   >
+    {onWishlistToggle && (
+      <button 
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onWishlistToggle(product);
+        }}
+        className={`absolute top-3 left-3 z-10 p-2 rounded-full shadow-md transition-all ${isInWishlist ? 'bg-primary text-white' : 'bg-white/90 text-gray-400 hover:text-primary'}`}
+      >
+        <Star className={`w-4 h-4 ${isInWishlist ? 'fill-current' : ''}`} />
+      </button>
+    )}
     <Link to={`/product/${product.id}`} className="block relative aspect-square overflow-hidden bg-gray-50">
       <img
         src={product.images[0] || 'https://picsum.photos/seed/agro/400/400'}
@@ -400,24 +443,26 @@ const ProductCard = ({ product }: { product: Product, key?: React.Key }) => (
 
 // --- Pages ---
 
-const Home = ({ products, banners }: { products: Product[], banners: Banner[] }) => {
+const Home = ({ products, banners, onWishlistToggle, wishlist }: { products: Product[], banners: Banner[], onWishlistToggle: (p: Product) => void, wishlist: Product[] }) => {
   const [currentBanner, setCurrentBanner] = useState(0);
+  const activeBanners = banners.filter(b => b.status === 'active');
+  const activeProducts = products.filter(p => p.status === 'active');
 
   useEffect(() => {
-    if (banners.length > 0) {
+    if (activeBanners.length > 0) {
       const timer = setInterval(() => {
-        setCurrentBanner((prev) => (prev + 1) % banners.length);
+        setCurrentBanner((prev) => (prev + 1) % activeBanners.length);
       }, 5000);
       return () => clearInterval(timer);
     }
-  }, [banners]);
+  }, [activeBanners]);
 
   return (
     <div className="space-y-16 pb-20">
       {/* Hero Slider */}
       <section className="relative h-[500px] md:h-[600px] overflow-hidden bg-gray-900">
-        {banners.length > 0 ? (
-          banners.map((banner, idx) => (
+        {activeBanners.length > 0 ? (
+          activeBanners.map((banner, idx) => (
             <motion.div
               key={banner.id}
               initial={{ opacity: 0 }}
@@ -471,8 +516,13 @@ const Home = ({ products, banners }: { products: Product[], banners: Banner[] })
           </Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {products.slice(0, 8).map((product) => (
-            <ProductCard key={product.id} product={product} />
+          {activeProducts.slice(0, 8).map((product) => (
+            <ProductCard 
+              key={product.id} 
+              product={product} 
+              onWishlistToggle={onWishlistToggle}
+              isInWishlist={wishlist.some(item => item.id === product.id)}
+            />
           ))}
         </div>
       </section>
@@ -511,8 +561,17 @@ const Home = ({ products, banners }: { products: Product[], banners: Banner[] })
 
 // --- Main App Component ---
 
-const AddProductPage = ({ setProducts, products }: any) => {
+const AddProductPage = ({ setProducts, products, user }: any) => {
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (!user || user.role !== 'admin') {
+      navigate('/admin/login');
+    }
+  }, [user, navigate]);
+
+  if (!user || user.role !== 'admin') return null;
+
   const { id } = useParams();
   const isEditing = !!id;
   const [formData, setFormData] = useState({
@@ -679,89 +738,211 @@ const AddProductPage = ({ setProducts, products }: any) => {
   );
 };
 
-const AboutPage = () => (
-  <div className="max-w-4xl mx-auto py-20 px-4 space-y-12">
-    <div className="text-center space-y-4">
-      <h1 className="text-4xl font-black text-gray-900">About Gangeshwar Agro</h1>
-      <p className="text-xl text-gray-500">Empowering farmers since 1995</p>
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-      <img src="https://picsum.photos/seed/farm3/800/600" className="rounded-3xl shadow-lg" referrerPolicy="no-referrer" />
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold">Our Mission</h2>
-        <p className="text-gray-600 leading-relaxed">
-          At Gangeshwar Agro Center, we believe that the backbone of our nation is the farmer. Our mission is to provide the highest quality agricultural inputs—seeds, fertilizers, and pesticides—at fair prices, combined with expert knowledge to ensure sustainable and profitable farming.
-        </p>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white p-4 rounded-2xl border border-gray-100">
-            <h4 className="font-bold text-primary text-2xl">25+</h4>
-            <p className="text-xs text-gray-500 uppercase">Years Experience</p>
-          </div>
-          <div className="bg-white p-4 rounded-2xl border border-gray-100">
-            <h4 className="font-bold text-primary text-2xl">10k+</h4>
-            <p className="text-xs text-gray-500 uppercase">Happy Farmers</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
+const AboutPage = () => {
+  const [about, setAbout] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-const ContactPage = () => (
-  <div className="max-w-5xl mx-auto py-20 px-4">
-    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col md:flex-row">
-      <div className="bg-primary p-12 text-white md:w-1/3 space-y-8">
-        <h2 className="text-3xl font-bold">Contact Us</h2>
+  useEffect(() => {
+    fetch('/api/about')
+      .then(res => res.json())
+      .then(data => {
+        setAbout(data);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="py-20 text-center">Loading...</div>;
+
+  return (
+    <div className="max-w-4xl mx-auto py-20 px-4 space-y-12">
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl font-black text-gray-900">About Gangeshwar Agro</h1>
+        <p className="text-xl text-gray-500">Empowering farmers since 1995</p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+        <img src="https://picsum.photos/seed/farm3/800/600" className="rounded-3xl shadow-lg" referrerPolicy="no-referrer" />
         <div className="space-y-6">
-          <div className="flex items-center space-x-4">
-            <div className="bg-white/10 p-3 rounded-xl"><Leaf className="w-5 h-5" /></div>
-            <div>
-              <p className="text-xs text-white/60 uppercase font-bold">Address</p>
-              <a 
-                href="https://www.google.com/maps/search/?api=1&query=Gangeshwar+Agro+Center+New+Market+Yard+Modi+Nagar+Palanpur+Gujarat+385001" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-sm hover:underline transition-all"
-              >
-                Gangeshwar Agro Center, New Market Yard, Modi Nagar, Palanpur, Gujarat 385001
-              </a>
+          <h2 className="text-2xl font-bold">Our Mission</h2>
+          <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
+            {about?.content || "At Gangeshwar Agro Center, we believe that the backbone of our nation is the farmer. Our mission is to provide the highest quality agricultural inputs—seeds, fertilizers, and pesticides—at fair prices, combined with expert knowledge to ensure sustainable and profitable farming."}
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white p-4 rounded-2xl border border-gray-100">
+              <h4 className="font-bold text-primary text-2xl">25+</h4>
+              <p className="text-xs text-gray-500 uppercase">Years Experience</p>
             </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="bg-white/10 p-3 rounded-xl"><Mail className="w-5 h-5" /></div>
-            <div>
-              <p className="text-xs text-white/60 uppercase font-bold">Email</p>
-              <p className="text-sm">vivekprajapati4894@gmail.com</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="bg-white/10 p-3 rounded-xl"><Phone className="w-5 h-5" /></div>
-            <div>
-              <p className="text-xs text-white/60 uppercase font-bold">Phone</p>
-              <a href="tel:+919712999082" className="block text-sm hover:underline transition-all">+91 97129 99082</a>
-              <a href="tel:+919925457719" className="block text-sm hover:underline transition-all">+91 99254 57719</a>
+            <div className="bg-white p-4 rounded-2xl border border-gray-100">
+              <h4 className="font-bold text-primary text-2xl">10k+</h4>
+              <p className="text-xs text-gray-500 uppercase">Happy Farmers</p>
             </div>
           </div>
         </div>
       </div>
-      <div className="p-12 flex-grow">
-        <h2 className="text-3xl font-bold mb-8">Send a Message</h2>
-        <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <input type="text" placeholder="Your Name" className="w-full px-4 py-3 rounded-2xl border border-gray-100 outline-none focus:border-primary" />
-          <input type="email" placeholder="Email Address" className="w-full px-4 py-3 rounded-2xl border border-gray-100 outline-none focus:border-primary" />
-          <textarea placeholder="How can we help you?" className="w-full px-4 py-3 rounded-2xl border border-gray-100 outline-none focus:border-primary md:col-span-2 h-32"></textarea>
-          <button className="bg-primary text-white py-4 rounded-2xl font-bold md:col-span-2 hover:bg-primary-dark transition-all">Send Message</button>
-        </form>
+    </div>
+  );
+};
+
+const ContactPage = () => {
+  const [contact, setContact] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/contact')
+      .then(res => res.json())
+      .then(data => {
+        setContact(data);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="py-20 text-center">Loading...</div>;
+
+  return (
+    <div className="max-w-5xl mx-auto py-20 px-4">
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden flex flex-col md:flex-row">
+        <div className="bg-primary p-12 text-white md:w-1/3 space-y-8">
+          <h2 className="text-3xl font-bold">Contact</h2>
+          <div className="space-y-6">
+            <div className="flex items-center space-x-4">
+              <div className="bg-white/10 p-3 rounded-xl"><Leaf className="w-5 h-5" /></div>
+              <div>
+                <p className="text-xs text-white/60 uppercase font-bold">Address</p>
+                <a 
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact?.address || "Gangeshwar Agro Center, New Market Yard, Modi Nagar, Palanpur, Gujarat 385001")}`}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm hover:underline transition-all"
+                >
+                  {contact?.address || "Gangeshwar Agro Center, New Market Yard, Modi Nagar, Palanpur, Gujarat 385001"}
+                </a>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="bg-white/10 p-3 rounded-xl"><Mail className="w-5 h-5" /></div>
+              <div>
+                <p className="text-xs text-white/60 uppercase font-bold">Email</p>
+                <p className="text-sm">{contact?.email || "vivekprajapati4894@gmail.com"}</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="bg-white/10 p-3 rounded-xl"><Phone className="w-5 h-5" /></div>
+              <div>
+                <p className="text-xs text-white/60 uppercase font-bold">Phone</p>
+                <a href={`tel:${contact?.phone?.split('|')[0]?.trim() || "+919712999082"}`} className="block text-sm hover:underline transition-all">
+                  {contact?.phone || "+91 97129 99082"}
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="p-12 flex-grow">
+          <h2 className="text-3xl font-bold mb-8">Send a Message</h2>
+          <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <input type="text" placeholder="Your Name" className="w-full px-4 py-3 rounded-2xl border border-gray-100 outline-none focus:border-primary" />
+            <input type="email" placeholder="Email Address" className="w-full px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:border-primary" />
+            <textarea placeholder="How can we help you?" className="w-full px-4 py-3 rounded-2xl border border-gray-100 outline-none focus:border-primary md:col-span-2 h-32"></textarea>
+            <button className="bg-primary text-white py-4 rounded-2xl font-bold md:col-span-2 hover:bg-primary-dark transition-all">Send Message</button>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [wishlist, setWishlist] = useState<Product[]>([]);
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+
+  const handleWishlistToggle = async (product: Product) => {
+    if (!user) {
+      setWishlist(prev => {
+        const exists = prev.find(item => item.id === product.id);
+        if (exists) {
+          return prev.filter(item => item.id !== product.id);
+        } else {
+          return [...prev, product];
+        }
+      });
+      return;
+    }
+
+    const exists = wishlist.find(item => item.id === product.id);
+    if (exists) {
+      await fetch(`/api/wishlist/${user.id}/${product.id}`, { method: 'DELETE' });
+      setWishlist(prev => prev.filter(item => item.id !== product.id));
+    } else {
+      await fetch('/api/wishlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id, product_id: product.id })
+      });
+      setWishlist(prev => [...prev, product]);
+    }
+  };
+
+  const handleClearWishlist = async () => {
+    if (user) {
+      // We don't have a clear all endpoint, so we loop or add one.
+      // For simplicity, I'll just remove them one by one or assume the user wants to manage them.
+      // Actually, let's add a clear endpoint in server.ts later if needed.
+      // For now, just local clear if guest, or alert.
+      if (confirm('Clear all items from wishlist?')) {
+        for (const item of wishlist) {
+          await fetch(`/api/wishlist/${user.id}/${item.id}`, { method: 'DELETE' });
+        }
+        setWishlist([]);
+      }
+    } else {
+      if (confirm('Clear all items from wishlist?')) {
+        setWishlist([]);
+      }
+    }
+  };
+
+  const handleUpdateWishlistNote = async (productId: number, note: string) => {
+    if (user) {
+      await fetch(`/api/wishlist/${user.id}/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note })
+      });
+      setWishlist(prev => prev.map(item => item.id === productId ? { ...item, note } : item));
+    } else {
+      setWishlist(prev => prev.map(item => item.id === productId ? { ...item, note } : item));
+    }
+  };
+
+  const totalPrice = wishlist.reduce((acc, item) => acc + item.price, 0);
+
+  useEffect(() => {
+    if (user) {
+      fetch(`/api/wishlist/${user.id}`)
+        .then(res => res.json())
+        .then(data => setWishlist(data))
+        .catch(err => console.error("Failed to fetch wishlist", err));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const trackVisitor = async () => {
+      try {
+        await fetch('/api/visitors', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: user?.name || 'Guest',
+            location: 'Unknown', // In a real app, use a geolocation API
+          })
+        });
+      } catch (err) {
+        console.error("Failed to track visitor", err);
+      }
+    };
+    trackVisitor();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -817,22 +998,24 @@ export default function App() {
   return (
     <Router>
       <div className="min-h-screen flex flex-col font-sans">
-        <Navbar user={user} onLogout={handleLogout} products={products} />
+        <Navbar user={user} onLogout={handleLogout} products={products} wishlistCount={wishlist.length} totalPrice={totalPrice} />
         <main className="flex-grow">
           <Routes>
-            <Route path="/" element={<Home products={products} banners={banners} />} />
-            <Route path="/products/:category" element={<ProductsPage products={products} />} />
-            <Route path="/product/:id" element={<ProductDetailsPage products={products} user={user} />} />
+            <Route path="/" element={<Home products={products} banners={banners} onWishlistToggle={handleWishlistToggle} wishlist={wishlist} />} />
+            <Route path="/products/:category" element={<ProductsPage products={products} onWishlistToggle={handleWishlistToggle} wishlist={wishlist} />} />
+            <Route path="/product/:id" element={<ProductDetailsPage products={products} user={user} onWishlistToggle={handleWishlistToggle} wishlist={wishlist} />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/login" element={<LoginPage setUser={setUser} />} />
+            <Route path="/admin/login" element={<AdminLoginPage setUser={setUser} />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            <Route path="/admin/*" element={<AdminDashboard products={products} setProducts={setProducts} banners={banners} setBanners={setBanners} />} />
-            <Route path="/admin/add-product" element={<AddProductPage setProducts={setProducts} products={products} />} />
-            <Route path="/admin/edit-product/:id" element={<AddProductPage setProducts={setProducts} products={products} />} />
-            <Route path="/admin/add-banner" element={<AddBannerPage setBanners={setBanners} />} />
+            <Route path="/wishlist" element={<WishlistPage wishlist={wishlist} onWishlistToggle={handleWishlistToggle} onClearWishlist={handleClearWishlist} onUpdateNote={handleUpdateWishlistNote} />} />
+            <Route path="/admin/*" element={<AdminDashboard products={products} setProducts={setProducts} banners={banners} setBanners={setBanners} user={user} />} />
+            <Route path="/admin/add-product" element={<AddProductPage setProducts={setProducts} products={products} user={user} />} />
+            <Route path="/admin/edit-product/:id" element={<AddProductPage setProducts={setProducts} products={products} user={user} />} />
+            <Route path="/admin/add-banner" element={<AddBannerPage setBanners={setBanners} user={user} />} />
           </Routes>
         </main>
         <Footer />
@@ -843,8 +1026,86 @@ export default function App() {
 
 // --- Sub-Pages ---
 
-const AddBannerPage = ({ setBanners }: any) => {
+const WishlistPage = ({ wishlist, onWishlistToggle, onClearWishlist, onUpdateNote }: { wishlist: Product[], onWishlistToggle: (p: Product) => void, onClearWishlist: () => void, onUpdateNote: (id: number, note: string) => void }) => {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900">My Wishlist</h1>
+          <p className="text-gray-500 mt-1">Manage your saved agricultural products and add notes</p>
+        </div>
+        {wishlist.length > 0 && (
+          <button 
+            onClick={onClearWishlist}
+            className="flex items-center space-x-2 text-red-500 hover:text-red-600 font-bold text-sm transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Clear Wishlist</span>
+          </button>
+        )}
+      </div>
+
+      {wishlist.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {wishlist.map((product) => (
+            <div key={product.id} className="bg-white rounded-[2rem] overflow-hidden shadow-sm border border-gray-100 flex flex-col">
+              <div className="relative group">
+                <ProductCard 
+                  product={product} 
+                  onWishlistToggle={onWishlistToggle}
+                  isInWishlist={true}
+                />
+                <button 
+                  onClick={() => onWishlistToggle(product)}
+                  className="absolute top-4 right-4 bg-white text-red-500 p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all hover:scale-110 z-20"
+                  title="Remove from Wishlist"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-6 pt-0 mt-auto border-t border-gray-50">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">My Notes</label>
+                <textarea
+                  value={product.note || ''}
+                  onChange={(e) => onUpdateNote(product.id, e.target.value)}
+                  placeholder="Add a note (e.g. 'For summer crop')"
+                  className="w-full px-4 py-3 rounded-xl bg-gray-50 border-none text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all resize-none h-20"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center py-24 bg-gray-50 rounded-[3rem] border-2 border-dashed border-gray-200"
+        >
+          <div className="bg-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+            <Star className="w-10 h-10 text-gray-200" />
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Your wishlist is empty</h2>
+          <p className="text-gray-500 mb-10 max-w-sm mx-auto">Save items you like to see them here later. We'll help you track the total price of your farming needs.</p>
+          <Link to="/products/all" className="bg-primary text-white px-10 py-4 rounded-2xl font-bold hover:bg-primary-dark transition-all shadow-xl shadow-primary/20 inline-block">
+            Browse Products
+          </Link>
+        </motion.div>
+      )}
+    </div>
+  );
+};
+
+const AddBannerPage = ({ setBanners, user }: any) => {
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (!user || user.role !== 'admin') {
+      navigate('/admin/login');
+    }
+  }, [user, navigate]);
+
+  if (!user || user.role !== 'admin') return null;
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -857,11 +1118,11 @@ const AddBannerPage = ({ setBanners }: any) => {
     const res = await fetch('/api/banners', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData)
+      body: JSON.stringify({ ...formData, status: 'active' })
     });
     const data = await res.json();
     if (data.id) {
-      setBanners((prev: any) => [...prev, { ...formData, id: data.id }]);
+      setBanners((prev: any) => [...prev, { ...formData, id: data.id, status: 'active' }]);
       navigate('/admin');
     }
   };
@@ -955,6 +1216,8 @@ const ResetPasswordPage = () => {
   const email = searchParams.get('email') || '';
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -989,25 +1252,43 @@ const ResetPasswordPage = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">New Password</label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-primary outline-none transition-all"
-              placeholder="••••••••"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showNewPassword ? "text" : "password"}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-primary outline-none transition-all pr-12"
+                placeholder="••••••••"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
+              >
+                {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">Confirm New Password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-primary outline-none transition-all"
-              placeholder="••••••••"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-primary outline-none transition-all pr-12"
+                placeholder="••••••••"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
           <button type="submit" className="w-full bg-primary text-white py-4 rounded-2xl font-bold hover:bg-primary-dark transition-all">
             Update Password
@@ -1026,6 +1307,7 @@ const RegisterPage = () => {
     phone: '',
     address: ''
   });
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -1059,7 +1341,22 @@ const RegisterPage = () => {
           </div>
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">Password</label>
-            <input type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-primary" required />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                value={formData.password} 
+                onChange={e => setFormData({...formData, password: e.target.value})} 
+                className="w-full px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-primary pr-10" 
+                required 
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-1">Phone</label>
@@ -1079,13 +1376,16 @@ const RegisterPage = () => {
   );
 };
 
-const ProductsPage = ({ products }: { products: Product[] }) => {
+const ProductsPage = ({ products, onWishlistToggle, wishlist }: { products: Product[], onWishlistToggle: (p: Product) => void, wishlist: Product[] }) => {
   const { category } = useParams() as any;
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const searchQuery = searchParams.get('search');
 
   let filtered = category === 'all' ? products : products.filter(p => p.category === category);
+  
+  // Filter only active products for customers
+  filtered = filtered.filter(p => p.status === 'active');
   
   if (searchQuery) {
     filtered = filtered.filter(p => 
@@ -1104,7 +1404,14 @@ const ProductsPage = ({ products }: { products: Product[] }) => {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
         {filtered.length > 0 ? (
-          filtered.map(p => <ProductCard key={p.id} product={p} />)
+          filtered.map(p => (
+            <ProductCard 
+              key={p.id} 
+              product={p} 
+              onWishlistToggle={onWishlistToggle}
+              isInWishlist={wishlist.some(item => item.id === p.id)}
+            />
+          ))
         ) : (
           <div className="col-span-full py-20 text-center text-gray-500">
             No products found matching your search.
@@ -1115,13 +1422,14 @@ const ProductsPage = ({ products }: { products: Product[] }) => {
   );
 };
 
-const ProductDetailsPage = ({ products, user }: { products: Product[], user: any }) => {
+const ProductDetailsPage = ({ products, user, onWishlistToggle, wishlist }: { products: Product[], user: any, onWishlistToggle: (p: Product) => void, wishlist: Product[] }) => {
   const { id } = useParams();
   const product = products.find(p => p.id === Number(id));
   const [reviews, setReviews] = useState<Review[]>([]);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const isInWishlist = product ? wishlist.some(item => item.id === product.id) : false;
 
   useEffect(() => {
     if (id) {
@@ -1194,6 +1502,16 @@ const ProductDetailsPage = ({ products, user }: { products: Product[], user: any
             <span className={`px-3 py-1 rounded-full text-xs font-bold ${product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
               {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
             </span>
+          </div>
+          <div className="pt-8 border-t border-gray-100">
+            <button 
+              onClick={() => onWishlistToggle(product)}
+              className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all flex items-center justify-center space-x-2 ${isInWishlist ? 'bg-gray-100 text-gray-600' : 'bg-primary text-white hover:bg-primary-dark shadow-primary/20'}`}
+            >
+              <Star className={`w-5 h-5 ${isInWishlist ? 'fill-current' : ''}`} />
+              <span>{isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}</span>
+            </button>
+            <p className="text-center text-xs text-gray-400 mt-4 uppercase tracking-widest font-bold">Secure Checkout Guaranteed</p>
           </div>
           <div className="pt-8 border-t border-gray-100">
             <h3 className="font-bold mb-4">Product Details</h3>
@@ -1298,9 +1616,116 @@ const ProductDetailsPage = ({ products, user }: { products: Product[], user: any
   );
 };
 
+const AdminLoginPage = ({ setUser }: { setUser: any }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (data.user && data.user.role === 'admin') {
+      setUser(data.user);
+      localStorage.setItem('agro_user', JSON.stringify(data.user));
+      navigate('/admin');
+    } else if (data.user && data.user.role !== 'admin') {
+      setError('Access denied. This portal is for administrators only.');
+    } else {
+      setError('Login failed. Please check your credentials.');
+    }
+  };
+
+  return (
+    <div className="min-h-[80vh] flex items-center justify-center px-4 bg-gray-50">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-md w-full"
+      >
+        <div className="bg-white p-10 rounded-[2rem] shadow-2xl border border-gray-100 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-2 bg-primary"></div>
+          
+          <div className="flex flex-col items-center mb-8">
+            <div className="bg-primary/10 p-4 rounded-2xl mb-4">
+              <Shield className="w-10 h-10 text-primary" />
+            </div>
+            <h1 className="text-3xl font-black text-gray-900">Admin Portal</h1>
+            <p className="text-gray-500 text-sm mt-2">Secure access for Gangeshwar Agro staff</p>
+          </div>
+
+          {error && (
+            <motion.div 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-xl mb-6 text-sm font-medium"
+            >
+              {error}
+            </motion.div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Admin Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-5 py-4 rounded-2xl border border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all bg-gray-50/50"
+                placeholder="admin@gangeshwaragro.com"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Security Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-5 py-4 rounded-2xl border border-gray-200 focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none transition-all bg-gray-50/50 pr-14"
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+            <button 
+              type="submit" 
+              className="w-full bg-gray-900 text-white py-4 rounded-2xl font-bold hover:bg-black transition-all shadow-xl shadow-gray-200 flex items-center justify-center space-x-2"
+            >
+              <span>Authenticate</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </form>
+          
+          <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+            <Link to="/login" className="text-sm text-gray-400 hover:text-primary transition-colors">
+              Return to Customer Login
+            </Link>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 const LoginPage = ({ setUser }: { setUser: any }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -1324,7 +1749,7 @@ const LoginPage = ({ setUser }: { setUser: any }) => {
   return (
     <div className="max-w-md mx-auto py-20 px-4">
       <div className="bg-white p-10 rounded-3xl shadow-sm border border-gray-100">
-        <h1 className="text-3xl font-black text-center mb-8">Welcome Back</h1>
+        <h1 className="text-3xl font-black text-center mb-8">Customer Login</h1>
         {error && <div className="bg-red-100 text-red-700 p-4 rounded-xl mb-6 text-sm font-bold">{error}</div>}
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
@@ -1342,14 +1767,23 @@ const LoginPage = ({ setUser }: { setUser: any }) => {
             <label className="block text-sm font-bold text-gray-700">Password</label>
             <Link to="/forgot-password" title="Forgot Password" id="forgot-password-link" className="text-xs text-primary font-bold hover:underline">Forgot Password?</Link>
           </div>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-            placeholder="Enter Your Password"
-            required
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all pr-12"
+              placeholder="Enter Your Password"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-primary transition-colors"
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
           <button type="submit" className="w-full bg-primary text-white py-4 rounded-2xl font-bold hover:bg-primary-dark transition-all shadow-lg shadow-primary/20">
             Sign In
           </button>
@@ -1357,34 +1791,88 @@ const LoginPage = ({ setUser }: { setUser: any }) => {
         <p className="mt-6 text-center text-sm text-gray-500">
           Don't have an account? <Link to="/register" className="text-primary font-bold">Register Now</Link>
         </p>
-  
+        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+          <Link to="/admin/login" className="text-xs text-gray-400 hover:text-primary transition-colors flex items-center justify-center space-x-1">
+            <Shield className="w-3 h-3" />
+            <span>Admin Portal</span>
+          </Link>
+        </div>
       </div>
     </div>
   );
 };
 
-const AdminDashboard = ({ products, setProducts, banners, setBanners }: any) => {
+const AdminDashboard = ({ products, setProducts, banners, setBanners, user }: any) => {
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (!user || user.role !== 'admin') {
+      navigate('/admin/login');
+    }
+  }, [user, navigate]);
+
+  if (!user || user.role !== 'admin') return null;
+
   const [activeTab, setActiveTab] = useState('products');
-  const [orders, setOrders] = useState<any[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [visitors, setVisitors] = useState<any[]>([]);
+  const [visitorStats, setVisitorStats] = useState<any>({ daily: [], location: [] });
+  const [chartType, setChartType] = useState('bar');
   const [loading, setLoading] = useState(false);
+  const [aboutContent, setAboutContent] = useState('');
+  const [contactInfo, setContactInfo] = useState({ address: '', phone: '', email: '' });
 
   useEffect(() => {
-    if (activeTab === 'orders') {
-      fetchOrders();
-    } else if (activeTab === 'customers') {
-      fetchCustomers();
+    if (activeTab === 'visitors') {
+      fetchVisitors();
+    } else if (activeTab === 'analytics') {
+      fetchVisitorStats();
+    } else if (activeTab === 'about') {
+      fetchAbout();
+    } else if (activeTab === 'contact') {
+      fetchContact();
     }
   }, [activeTab]);
 
-  const fetchOrders = async () => {
+  const fetchAbout = async () => {
+    setLoading(true);
+    const res = await fetch('/api/about');
+    const data = await res.json();
+    setAboutContent(data.content);
+    setLoading(false);
+  };
+
+  const fetchContact = async () => {
+    setLoading(true);
+    const res = await fetch('/api/contact');
+    const data = await res.json();
+    setContactInfo(data);
+    setLoading(false);
+  };
+
+  const handleSaveAbout = async () => {
+    await fetch('/api/about', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: aboutContent })
+    });
+    alert('About content updated!');
+  };
+
+  const handleSaveContact = async () => {
+    await fetch('/api/contact', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(contactInfo)
+    });
+    alert('Contact info updated!');
+  };
+
+  const fetchVisitors = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/orders');
+      const res = await fetch('/api/visitors');
       const data = await res.json();
-      setOrders(data);
+      setVisitors(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -1392,12 +1880,12 @@ const AdminDashboard = ({ products, setProducts, banners, setBanners }: any) => 
     }
   };
 
-  const fetchCustomers = async () => {
+  const fetchVisitorStats = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/customers');
+      const res = await fetch('/api/visitors/stats');
       const data = await res.json();
-      setCustomers(data);
+      setVisitorStats(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -1412,19 +1900,130 @@ const AdminDashboard = ({ products, setProducts, banners, setBanners }: any) => 
     }
   };
 
-  const handleUpdateOrderStatus = async (id: number, status: string) => {
-    await fetch(`/api/orders/${id}`, {
+  const handleToggleProductStatus = async (product: Product) => {
+    const newStatus = product.status === 'active' ? 'inactive' : 'active';
+    await fetch(`/api/products/${product.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ ...product, status: newStatus })
     });
-    setOrders(orders.map(o => o.id === id ? { ...o, status } : o));
+    setProducts(products.map((p: any) => p.id === product.id ? { ...p, status: newStatus } : p));
   };
 
-  const handleDeleteCustomer = async (id: number) => {
-    if (confirm('Delete this customer?')) {
-      await fetch(`/api/customers/${id}`, { method: 'DELETE' });
-      setCustomers(customers.filter((c: any) => c.id !== id));
+  const handleToggleBannerStatus = async (banner: Banner) => {
+    const newStatus = banner.status === 'active' ? 'inactive' : 'active';
+    await fetch(`/api/banners/${banner.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...banner, status: newStatus })
+    });
+    setBanners(banners.map((b: any) => b.id === banner.id ? { ...b, status: newStatus } : b));
+  };
+
+  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+
+  const renderChart = () => {
+    const data = chartType === 'pie' || chartType === 'donut' ? visitorStats.location : visitorStats.daily;
+    
+    if (!data || data.length === 0) return <div className="h-full flex items-center justify-center text-gray-400">No data available for charts</div>;
+
+    switch (chartType) {
+      case 'bar':
+        return (
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={visitorStats.daily}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} />
+              <Tooltip 
+                contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+              />
+              <Bar dataKey="count" fill="#10b981" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      case 'pie':
+      case 'donut':
+        return (
+          <ResponsiveContainer width="100%" height={400}>
+            <PieChart>
+              <Pie
+                data={visitorStats.location}
+                cx="50%"
+                cy="50%"
+                innerRadius={chartType === 'donut' ? 60 : 0}
+                outerRadius={120}
+                fill="#8884d8"
+                paddingAngle={5}
+                dataKey="count"
+                nameKey="location"
+                label
+              >
+                {visitorStats.location.map((entry: any, index: number) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        );
+      case 'area':
+        return (
+          <ResponsiveContainer width="100%" height={400}>
+            <AreaChart data={visitorStats.daily}>
+              <defs>
+                <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} />
+              <Tooltip />
+              <Area type="monotone" dataKey="count" stroke="#10b981" fillOpacity={1} fill="url(#colorCount)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        );
+      case 'bullet':
+        // Bullet chart simulation using BarChart
+        return (
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart layout="vertical" data={visitorStats.daily.slice(-5)}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+              <XAxis type="number" hide />
+              <YAxis dataKey="date" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} />
+              <Tooltip />
+              <Bar dataKey="count" fill="#10b981" barSize={20} radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      case 'waterfall':
+        // Waterfall chart simulation
+        const waterfallData = visitorStats.daily.reduce((acc: any[], curr: any, i: number) => {
+          const prev = i === 0 ? 0 : acc[i-1].end;
+          acc.push({
+            ...curr,
+            start: prev,
+            end: prev + curr.count,
+            display: [prev, prev + curr.count]
+          });
+          return acc;
+        }, []);
+        return (
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={waterfallData}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#9ca3af' }} />
+              <Tooltip />
+              <Bar dataKey="display" fill="#3b82f6" radius={[4, 4, 4, 4]} />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+      default:
+        return null;
     }
   };
 
@@ -1441,13 +2040,21 @@ const AdminDashboard = ({ products, setProducts, banners, setBanners }: any) => 
             <ImageIcon className="w-5 h-5" />
             <span>Banners</span>
           </button>
-          <button onClick={() => setActiveTab('orders')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all ${activeTab === 'orders' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-600 hover:bg-gray-100'}`}>
-            <LayoutDashboard className="w-5 h-5" />
-            <span>Orders</span>
-          </button>
-          <button onClick={() => setActiveTab('customers')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all ${activeTab === 'customers' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-600 hover:bg-gray-100'}`}>
+          <button onClick={() => setActiveTab('visitors')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all ${activeTab === 'visitors' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-600 hover:bg-gray-100'}`}>
             <Users className="w-5 h-5" />
-            <span>Customers</span>
+            <span>Visitors</span>
+          </button>
+          <button onClick={() => setActiveTab('analytics')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all ${activeTab === 'analytics' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-600 hover:bg-gray-100'}`}>
+            <Activity className="w-5 h-5" />
+            <span>Analytics</span>
+          </button>
+          <button onClick={() => setActiveTab('about')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all ${activeTab === 'about' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-600 hover:bg-gray-100'}`}>
+            <Leaf className="w-5 h-5" />
+            <span>About</span>
+          </button>
+          <button onClick={() => setActiveTab('contact')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all ${activeTab === 'contact' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-600 hover:bg-gray-100'}`}>
+            <Phone className="w-5 h-5" />
+            <span>Contact</span>
           </button>
         </aside>
 
@@ -1493,6 +2100,13 @@ const AdminDashboard = ({ products, setProducts, banners, setBanners }: any) => 
                         <td className="py-4 text-sm">{p.stock}</td>
                         <td className="py-4">
                           <div className="flex space-x-2">
+                            <button 
+                              onClick={() => handleToggleProductStatus(p)}
+                              className={`p-2 rounded-lg transition-colors ${p.status === 'active' ? 'text-green-500 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-50'}`}
+                              title={p.status === 'active' ? 'Deactivate' : 'Activate'}
+                            >
+                              {p.status === 'active' ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                            </button>
                             <button onClick={() => navigate(`/admin/edit-product/${p.id}`)} className="p-2 text-gray-400 hover:text-primary"><Edit className="w-4 h-4" /></button>
                             <button onClick={() => handleDeleteProduct(p.id)} className="p-2 text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
                           </div>
@@ -1519,73 +2133,58 @@ const AdminDashboard = ({ products, setProducts, banners, setBanners }: any) => 
                     <div className="flex-grow">
                       <h4 className="font-bold">{b.title}</h4>
                       <p className="text-xs text-gray-500">{b.description}</p>
+                      <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${b.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                        {b.status}
+                      </span>
                     </div>
-                    <button onClick={async () => {
-                      if(confirm('Delete banner?')) {
-                        await fetch(`/api/banners/${b.id}`, { method: 'DELETE' });
-                        setBanners(banners.filter((ban: any) => ban.id !== b.id));
-                      }
-                    }} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => handleToggleBannerStatus(b)}
+                        className={`p-2 rounded-lg transition-colors ${b.status === 'active' ? 'text-green-500 hover:bg-green-50' : 'text-gray-400 hover:bg-gray-50'}`}
+                        title={b.status === 'active' ? 'Deactivate' : 'Activate'}
+                      >
+                        {b.status === 'active' ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                      </button>
+                      <button onClick={async () => {
+                        if(confirm('Delete banner?')) {
+                          await fetch(`/api/banners/${b.id}`, { method: 'DELETE' });
+                          setBanners(banners.filter((ban: any) => ban.id !== b.id));
+                        }
+                      }} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
-          {!loading && activeTab === 'orders' && (
+          {!loading && activeTab === 'visitors' && (
             <div className="space-y-8">
-              <h3 className="text-2xl font-bold">Recent Orders</h3>
+              <h3 className="text-2xl font-bold">Website Visitors</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b border-gray-100 text-gray-400 text-sm">
-                      <th className="pb-4 font-medium">Order ID</th>
-                      <th className="pb-4 font-medium">Customer</th>
-                      <th className="pb-4 font-medium">Amount</th>
-                      <th className="pb-4 font-medium">Status</th>
+                      <th className="pb-4 font-medium">ID</th>
+                      <th className="pb-4 font-medium">Name</th>
+                      <th className="pb-4 font-medium">Location</th>
+                      <th className="pb-4 font-medium">IP Address</th>
                       <th className="pb-4 font-medium">Date</th>
-                      <th className="pb-4 font-medium">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {orders.length > 0 ? orders.map((o: any) => (
-                      <tr key={o.id}>
-                        <td className="py-4 text-sm font-mono">#ORD-{o.id}</td>
-                        <td className="py-4">
-                          <div className="font-bold">{o.user_name}</div>
-                          <div className="text-xs text-gray-400">{o.user_email}</div>
-                        </td>
-                        <td className="py-4 font-bold text-primary">₹{o.total_amount}</td>
-                        <td className="py-4">
-                          <select 
-                            value={o.status} 
-                            onChange={(e) => handleUpdateOrderStatus(o.id, e.target.value)}
-                            className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase outline-none ${
-                              o.status === 'delivered' ? 'bg-green-100 text-green-700' : 
-                              o.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 
-                              'bg-blue-100 text-blue-700'
-                            }`}
-                          >
-                            <option value="pending">Pending</option>
-                            <option value="processing">Processing</option>
-                            <option value="delivered">Delivered</option>
-                            <option value="cancelled">Cancelled</option>
-                          </select>
-                        </td>
-                        <td className="py-4 text-sm text-gray-500">{new Date(o.created_at).toLocaleDateString()}</td>
-                        <td className="py-4">
-                           <button 
-                             onClick={() => alert(JSON.stringify(o.items, null, 2))}
-                             className="text-xs text-primary hover:underline"
-                           >
-                             View Items
-                           </button>
-                        </td>
+                    {visitors.length > 0 ? visitors.map((v: any) => (
+                      <tr key={v.id}>
+                        <td className="py-4 text-sm font-mono text-gray-400">#{v.id}</td>
+                        <td className="py-4 font-bold">{v.name}</td>
+                        <td className="py-4 text-sm">{v.location}</td>
+                        <td className="py-4 text-sm text-gray-500">{v.ip_address}</td>
+                        <td className="py-4 text-sm text-gray-500">{new Date(v.visited_at).toLocaleString()}</td>
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan={6} className="py-10 text-center text-gray-400">No orders found.</td>
+                        <td colSpan={5} className="py-10 text-center text-gray-400">No visitors found.</td>
                       </tr>
                     )}
                   </tbody>
@@ -1593,58 +2192,127 @@ const AdminDashboard = ({ products, setProducts, banners, setBanners }: any) => 
               </div>
             </div>
           )}
-          {!loading && activeTab === 'customers' && (
+          {!loading && activeTab === 'analytics' && (
             <div className="space-y-8">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <h3 className="text-2xl font-bold">Customer Management</h3>
-                <div className="relative w-full md:w-72">
-                  <input
-                    type="text"
-                    placeholder="Search by name or email..."
-                    value={customerSearchQuery}
-                    onChange={(e) => setCustomerSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  />
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <div className="flex justify-between items-center">
+                <h3 className="text-2xl font-bold">Visitor Analytics</h3>
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Chart Type:</span>
+                  <select 
+                    value={chartType} 
+                    onChange={(e) => setChartType(e.target.value)}
+                    className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="bar">Bar Chart</option>
+                    <option value="pie">Pie Chart</option>
+                    <option value="donut">Donut Chart</option>
+                    <option value="area">Area Chart</option>
+                    <option value="bullet">Bullet Chart</option>
+                    <option value="waterfall">Waterfall Chart</option>
+                  </select>
                 </div>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="border-b border-gray-100 text-gray-400 text-sm">
-                      <th className="pb-4 font-medium">Name</th>
-                      <th className="pb-4 font-medium">Email</th>
-                      <th className="pb-4 font-medium">Phone</th>
-                      <th className="pb-4 font-medium">Joined Date</th>
-                      <th className="pb-4 font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-50">
-                    {customers.filter(c => 
-                      c.name.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
-                      c.email.toLowerCase().includes(customerSearchQuery.toLowerCase())
-                    ).length > 0 ? customers.filter(c => 
-                      c.name.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
-                      c.email.toLowerCase().includes(customerSearchQuery.toLowerCase())
-                    ).map((c: any) => (
-                      <tr key={c.id}>
-                        <td className="py-4 font-bold">{c.name}</td>
-                        <td className="py-4 text-sm">{c.email}</td>
-                        <td className="py-4 text-sm">{c.phone || 'N/A'}</td>
-                        <td className="py-4 text-sm text-gray-500">{new Date(c.created_at).toLocaleDateString()}</td>
-                        <td className="py-4">
-                          <button onClick={() => handleDeleteCustomer(c.id)} className="p-2 text-gray-400 hover:text-red-500">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    )) : (
-                      <tr>
-                        <td colSpan={5} className="py-10 text-center text-gray-400">No customers found.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+              <div className="bg-gray-50 p-8 rounded-3xl border border-gray-100">
+                {renderChart()}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                  <h4 className="font-bold mb-4 flex items-center">
+                    <BarChart3 className="w-4 h-4 mr-2 text-primary" />
+                    Top Locations
+                  </h4>
+                  <div className="space-y-4">
+                    {visitorStats.location.slice(0, 5).map((loc: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">{loc.location}</span>
+                        <div className="flex items-center space-x-3 flex-grow mx-4">
+                          <div className="h-2 bg-gray-100 rounded-full flex-grow overflow-hidden">
+                            <motion.div 
+                              initial={{ width: 0 }}
+                              animate={{ width: `${(loc.count / Math.max(...visitorStats.location.map((l:any) => l.count))) * 100}%` }}
+                              className="h-full bg-primary"
+                            />
+                          </div>
+                          <span className="text-xs font-bold text-gray-900">{loc.count}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
+                  <h4 className="font-bold mb-4 flex items-center">
+                    <PieChartIcon className="w-4 h-4 mr-2 text-primary" />
+                    Visit Summary
+                  </h4>
+                  <div className="flex items-center justify-center h-40">
+                    <div className="text-center">
+                      <p className="text-4xl font-black text-primary">{visitorStats.daily.reduce((acc:any, curr:any) => acc + curr.count, 0)}</p>
+                      <p className="text-xs text-gray-400 uppercase tracking-widest mt-1">Total Visits</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {!loading && activeTab === 'about' && (
+            <div className="space-y-8">
+              <h3 className="text-2xl font-bold">Manage About Us</h3>
+              <div className="space-y-4">
+                <label className="block text-sm font-bold text-gray-700">About Content</label>
+                <textarea 
+                  value={aboutContent} 
+                  onChange={(e) => setAboutContent(e.target.value)}
+                  className="w-full px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:border-primary h-64"
+                  placeholder="Write about your company..."
+                />
+                <button 
+                  onClick={handleSaveAbout}
+                  className="bg-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-primary-dark transition-all shadow-lg shadow-primary/20"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          )}
+          {!loading && activeTab === 'contact' && (
+            <div className="space-y-8">
+              <h3 className="text-2xl font-bold">Manage Contact Info</h3>
+              <div className="space-y-6 max-w-2xl">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Address</label>
+                  <textarea 
+                    value={contactInfo.address} 
+                    onChange={(e) => setContactInfo({ ...contactInfo, address: e.target.value })}
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:border-primary h-24"
+                    placeholder="Enter full address..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Phone Numbers (use | to separate multiple)</label>
+                  <input 
+                    type="text"
+                    value={contactInfo.phone} 
+                    onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:border-primary"
+                    placeholder="+91 97129 99082 | +91 99254 57719"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Email Address</label>
+                  <input 
+                    type="email"
+                    value={contactInfo.email} 
+                    onChange={(e) => setContactInfo({ ...contactInfo, email: e.target.value })}
+                    className="w-full px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:border-primary"
+                    placeholder="example@gmail.com"
+                  />
+                </div>
+                <button 
+                  onClick={handleSaveContact}
+                  className="bg-primary text-white px-8 py-3 rounded-xl font-bold hover:bg-primary-dark transition-all shadow-lg shadow-primary/20"
+                >
+                  Save Changes
+                </button>
               </div>
             </div>
           )}

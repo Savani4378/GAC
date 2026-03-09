@@ -48,18 +48,17 @@ db.exec(`
     description TEXT,
     image_url TEXT NOT NULL,
     link TEXT,
+    status TEXT DEFAULT 'active',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
-  CREATE TABLE IF NOT EXISTS orders (
+  CREATE TABLE IF NOT EXISTS visitors (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    total_amount REAL NOT NULL,
-    status TEXT DEFAULT 'pending',
-    items TEXT NOT NULL, -- JSON array of items
-    shipping_address TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    name TEXT DEFAULT 'Guest',
+    location TEXT,
+    ip_address TEXT,
+    user_agent TEXT,
+    visited_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
   CREATE TABLE IF NOT EXISTS reviews (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -71,7 +70,49 @@ db.exec(`
     FOREIGN KEY (product_id) REFERENCES products(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+
+  CREATE TABLE IF NOT EXISTS wishlist (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    note TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, product_id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS about_content (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    content TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS contact_info (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    address TEXT,
+    phone TEXT,
+    email TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 `);
+
+// Seed About and Contact if not exists
+const aboutExists = db.prepare("SELECT COUNT(*) as count FROM about_content").get().count;
+if (aboutExists === 0) {
+  db.prepare("INSERT INTO about_content (content) VALUES (?)").run(
+    "Your trusted partner in agriculture. Providing high-quality seeds, fertilizers, and pesticides to farmers across the region. We are dedicated to improving crop yields and supporting sustainable farming practices."
+  );
+}
+
+const contactExists = db.prepare("SELECT COUNT(*) as count FROM contact_info").get().count;
+if (contactExists === 0) {
+  db.prepare("INSERT INTO contact_info (address, phone, email) VALUES (?, ?, ?)").run(
+    "Gangeshwar Agro Center, New Market Yard, Modi Nagar, Palanpur, Gujarat 385001",
+    "+91 97129 99082 | +91 99254 57719",
+    "vivekprajapati4894@gmail.com"
+  );
+}
 
 // Seed Admin User if not exists
 const adminExists = db.prepare("SELECT * FROM users WHERE email = ?").get("vivekprajapati4894@gmail.com");
@@ -84,18 +125,29 @@ if (!adminExists) {
   );
 }
 
-// Seed Customers if not exists
-const customersCount = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'customer'").get().count;
-if (customersCount === 0) {
-  const seedCustomers = [
-    { name: "Rajesh Kumar", email: "rajesh@example.com", phone: "9876543210", address: "Ahmedabad, Gujarat" },
-    { name: "Suresh Patel", email: "suresh@example.com", phone: "9123456789", address: "Surat, Gujarat" },
-    { name: "Amit Shah", email: "amit@example.com", phone: "9988776655", address: "Palanpur, Gujarat" },
+// Seed Visitors if not exists
+const visitorsExist = db.prepare("SELECT COUNT(*) as count FROM visitors").get().count;
+if (visitorsExist === 0) {
+  const seedVisitors = [
+    { name: "Guest 1", location: "Ahmedabad", ip_address: "192.168.1.1", user_agent: "Mozilla/5.0", visited_at: "2026-03-01 10:00:00" },
+    { name: "Guest 2", location: "Surat", ip_address: "192.168.1.2", user_agent: "Mozilla/5.0", visited_at: "2026-03-02 11:00:00" },
+    { name: "Guest 3", location: "Ahmedabad", ip_address: "192.168.1.3", user_agent: "Mozilla/5.0", visited_at: "2026-03-03 12:00:00" },
+    { name: "Guest 4", location: "Palanpur", ip_address: "192.168.1.4", user_agent: "Mozilla/5.0", visited_at: "2026-03-04 13:00:00" },
+    { name: "Guest 5", location: "Ahmedabad", ip_address: "192.168.1.5", user_agent: "Mozilla/5.0", visited_at: "2026-03-05 14:00:00" },
+    { name: "Guest 6", location: "Rajkot", ip_address: "192.168.1.6", user_agent: "Mozilla/5.0", visited_at: "2026-03-06 15:00:00" },
+    { name: "Guest 7", location: "Surat", ip_address: "192.168.1.7", user_agent: "Mozilla/5.0", visited_at: "2026-03-07 16:00:00" },
+    { name: "Guest 8", location: "Ahmedabad", ip_address: "192.168.1.8", user_agent: "Mozilla/5.0", visited_at: "2026-03-08 17:00:00" },
+    { name: "Guest 9", location: "Mehsana", ip_address: "192.168.1.9", user_agent: "Mozilla/5.0", visited_at: "2026-03-08 18:00:00" },
+    { name: "Guest 10", location: "Ahmedabad", ip_address: "192.168.1.10", user_agent: "Mozilla/5.0", visited_at: "2026-03-08 19:00:00" },
   ];
 
-  const insertCustomer = db.prepare("INSERT INTO users (name, email, password, role, phone, address) VALUES (?, ?, ?, 'customer', ?, ?)");
-  seedCustomers.forEach(c => {
-    insertCustomer.run(c.name, c.email, "customer123", c.phone, c.address);
+  const insertVisitor = db.prepare(`
+    INSERT INTO visitors (name, location, ip_address, user_agent, visited_at)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+
+  seedVisitors.forEach(v => {
+    insertVisitor.run(v.name, v.location, v.ip_address, v.user_agent, v.visited_at);
   });
 }
 
@@ -226,11 +278,20 @@ app.get("/api/banners", (req, res) => {
 });
 
 app.post("/api/banners", (req, res) => {
-  const { title, description, image_url, link } = req.body;
-  const result = db.prepare("INSERT INTO banners (title, description, image_url, link) VALUES (?, ?, ?, ?)").run(
-    title, description, image_url, link
+  const { title, description, image_url, link, status } = req.body;
+  const result = db.prepare("INSERT INTO banners (title, description, image_url, link, status) VALUES (?, ?, ?, ?, ?)").run(
+    title, description, image_url, link, status || 'active'
   );
   res.json({ id: result.lastInsertRowid });
+});
+
+app.put("/api/banners/:id", (req, res) => {
+  const { title, description, image_url, link, status } = req.body;
+  db.prepare(`
+    UPDATE banners SET title = ?, description = ?, image_url = ?, link = ?, status = ?
+    WHERE id = ?
+  `).run(title, description, image_url, link, status, req.params.id);
+  res.json({ success: true });
 });
 
 app.delete("/api/banners/:id", (req, res) => {
@@ -238,40 +299,36 @@ app.delete("/api/banners/:id", (req, res) => {
   res.json({ success: true });
 });
 
-// Orders
-app.get("/api/orders", (req, res) => {
-  const orders = db.prepare(`
-    SELECT orders.*, users.name as user_name, users.email as user_email
-    FROM orders
-    JOIN users ON orders.user_id = users.id
-  `).all();
-  res.json(orders.map(o => ({ ...o, items: JSON.parse(o.items) })));
+// Visitors
+app.get("/api/visitors", (req, res) => {
+  const visitors = db.prepare("SELECT * FROM visitors ORDER BY visited_at DESC").all();
+  res.json(visitors);
 });
 
-app.post("/api/orders", (req, res) => {
-  const { user_id, total_amount, items, shipping_address } = req.body;
-  const result = db.prepare(`
-    INSERT INTO orders (user_id, total_amount, items, shipping_address)
-    VALUES (?, ?, ?, ?)
-  `).run(user_id, total_amount, JSON.stringify(items), shipping_address);
+app.post("/api/visitors", (req, res) => {
+  const { name, location, ip_address, user_agent } = req.body;
+  const result = db.prepare("INSERT INTO visitors (name, location, ip_address, user_agent) VALUES (?, ?, ?, ?)").run(
+    name || 'Guest', location || 'Unknown', ip_address || req.ip, user_agent || req.headers['user-agent']
+  );
   res.json({ id: result.lastInsertRowid });
 });
 
-app.put("/api/orders/:id", (req, res) => {
-  const { status } = req.body;
-  db.prepare("UPDATE orders SET status = ? WHERE id = ?").run(status, req.params.id);
-  res.json({ success: true });
-});
+app.get("/api/visitors/stats", (req, res) => {
+  const daily = db.prepare(`
+    SELECT date(visited_at) as date, count(*) as count
+    FROM visitors
+    GROUP BY date(visited_at)
+    ORDER BY date ASC
+  `).all();
+  
+  const location = db.prepare(`
+    SELECT location, count(*) as count
+    FROM visitors
+    GROUP BY location
+    ORDER BY count DESC
+  `).all();
 
-// Customers
-app.get("/api/customers", (req, res) => {
-  const customers = db.prepare("SELECT * FROM users WHERE role = 'customer'").all();
-  res.json(customers);
-});
-
-app.delete("/api/customers/:id", (req, res) => {
-  db.prepare("DELETE FROM users WHERE id = ? AND role = 'customer'").run(req.params.id);
-  res.json({ success: true });
+  res.json({ daily, location });
 });
 
 // Reviews
@@ -295,7 +352,72 @@ app.post("/api/reviews", (req, res) => {
   res.json({ id: result.lastInsertRowid });
 });
 
-// Vite Middleware for Development
+// Wishlist
+app.get("/api/wishlist/:user_id", (req, res) => {
+  const wishlist = db.prepare(`
+    SELECT products.*, wishlist.note
+    FROM wishlist
+    JOIN products ON wishlist.product_id = products.id
+    WHERE wishlist.user_id = ?
+  `).all(req.params.user_id);
+  res.json(wishlist.map(p => ({ ...p, images: JSON.parse(p.images || '[]') })));
+});
+
+app.post("/api/wishlist", (req, res) => {
+  const { user_id, product_id, note } = req.body;
+  try {
+    const result = db.prepare("INSERT INTO wishlist (user_id, product_id, note) VALUES (?, ?, ?)").run(user_id, product_id, note || "");
+    res.json({ id: result.lastInsertRowid });
+  } catch (e) {
+    res.status(400).json({ error: "Already in wishlist" });
+  }
+});
+
+app.put("/api/wishlist/:user_id/:product_id", (req, res) => {
+  const { note } = req.body;
+  db.prepare("UPDATE wishlist SET note = ? WHERE user_id = ? AND product_id = ?").run(note, req.params.user_id, req.params.product_id);
+  res.json({ success: true });
+});
+
+app.delete("/api/wishlist/:user_id/:product_id", (req, res) => {
+  db.prepare("DELETE FROM wishlist WHERE user_id = ? AND product_id = ?").run(req.params.user_id, req.params.product_id);
+  res.json({ success: true });
+});
+
+// About Content
+app.get("/api/about", (req, res) => {
+  const about = db.prepare("SELECT * FROM about_content ORDER BY id DESC LIMIT 1").get();
+  res.json(about || { content: "" });
+});
+
+app.put("/api/about", (req, res) => {
+  const { content } = req.body;
+  const exists = db.prepare("SELECT id FROM about_content LIMIT 1").get();
+  if (exists) {
+    db.prepare("UPDATE about_content SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(content, exists.id);
+  } else {
+    db.prepare("INSERT INTO about_content (content) VALUES (?)").run(content);
+  }
+  res.json({ success: true });
+});
+
+// Contact Info
+app.get("/api/contact", (req, res) => {
+  const contact = db.prepare("SELECT * FROM contact_info ORDER BY id DESC LIMIT 1").get();
+  res.json(contact || { address: "", phone: "", email: "" });
+});
+
+app.put("/api/contact", (req, res) => {
+  const { address, phone, email } = req.body;
+  const exists = db.prepare("SELECT id FROM contact_info LIMIT 1").get();
+  if (exists) {
+    db.prepare("UPDATE contact_info SET address = ?, phone = ?, email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(address, phone, email, exists.id);
+  } else {
+    db.prepare("INSERT INTO contact_info (address, phone, email) VALUES (?, ?, ?)").run(address, phone, email);
+  }
+  res.json({ success: true });
+});
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
