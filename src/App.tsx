@@ -97,7 +97,7 @@ const Navbar = ({ user, onLogout, products, wishlistCount, totalPrice }: { user:
         <div className="flex justify-between h-20 items-center gap-4">
           <Link to="/" className="flex items-center space-x-2 shrink-0">
             <img src="/logo.png" alt="Gangeshwar Agro Logo" className="w-10 h-10 object-contain" onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://cdn-icons-png.flaticon.com/512/628/628283.png'; // Fallback if logo.png is empty/missing
+              (e.target as HTMLImageElement).src = 'https://github.com/Savani4378/GangeshwarAgroCenter/blob/main/logo.png'; // Fallback if logo.png is empty/missing
             }} />
             <span className="text-2xl font-bold text-primary tracking-tight hidden sm:block">Gangeshwar Agro Center</span>
           </Link>
