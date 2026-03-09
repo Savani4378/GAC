@@ -14,7 +14,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 // Database Initialization
-const db = new Database("agro.db");
+const db = new Database("./data/agro.db");
 
 // Create tables
 db.exec(`
