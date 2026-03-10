@@ -109,14 +109,14 @@ CREATE TABLE IF NOT EXISTS products (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
-  // Add columns if they don't exist (for existing databases)
+
   try { db.prepare("ALTER TABLE social_links ADD COLUMN facebook_visible INTEGER DEFAULT 1").run(); } catch(e) {}
   try { db.prepare("ALTER TABLE social_links ADD COLUMN instagram_visible INTEGER DEFAULT 1").run(); } catch(e) {}
   try { db.prepare("ALTER TABLE social_links ADD COLUMN twitter_visible INTEGER DEFAULT 1").run(); } catch(e) {}
   try { db.prepare("ALTER TABLE social_links ADD COLUMN whatsapp_visible INTEGER DEFAULT 1").run(); } catch(e) {}
 `);
 
-// Seed About and Contact if not exists
+
 const aboutExists = db.prepare("SELECT COUNT(*) as count FROM about_content").get().count;
 if (aboutExists === 0) {
   db.prepare("INSERT INTO about_content (content) VALUES (?)").run(
@@ -149,7 +149,7 @@ if (!adminExists) {
   db.prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)").run(
     "Admin",
     "gangeshwaragrocenter@gmail.com",
-    "admin123",
+    "Admin@!#123",
     "admin"
   );
 }
@@ -159,15 +159,7 @@ const visitorsExist = db.prepare("SELECT COUNT(*) as count FROM visitors").get()
 if (visitorsExist === 0) {
   const seedVisitors = [
     { name: "Guest 1", location: "Ahmedabad", ip_address: "192.168.1.1", user_agent: "Mozilla/5.0", visited_at: "2026-03-01 10:00:00" },
-    { name: "Guest 2", location: "Surat", ip_address: "192.168.1.2", user_agent: "Mozilla/5.0", visited_at: "2026-03-02 11:00:00" },
-    { name: "Guest 3", location: "Ahmedabad", ip_address: "192.168.1.3", user_agent: "Mozilla/5.0", visited_at: "2026-03-03 12:00:00" },
-    { name: "Guest 4", location: "Palanpur", ip_address: "192.168.1.4", user_agent: "Mozilla/5.0", visited_at: "2026-03-04 13:00:00" },
-    { name: "Guest 5", location: "Ahmedabad", ip_address: "192.168.1.5", user_agent: "Mozilla/5.0", visited_at: "2026-03-05 14:00:00" },
-    { name: "Guest 6", location: "Rajkot", ip_address: "192.168.1.6", user_agent: "Mozilla/5.0", visited_at: "2026-03-06 15:00:00" },
-    { name: "Guest 7", location: "Surat", ip_address: "192.168.1.7", user_agent: "Mozilla/5.0", visited_at: "2026-03-07 16:00:00" },
-    { name: "Guest 8", location: "Ahmedabad", ip_address: "192.168.1.8", user_agent: "Mozilla/5.0", visited_at: "2026-03-08 17:00:00" },
-    { name: "Guest 9", location: "Mehsana", ip_address: "192.168.1.9", user_agent: "Mozilla/5.0", visited_at: "2026-03-08 18:00:00" },
-    { name: "Guest 10", location: "Ahmedabad", ip_address: "192.168.1.10", user_agent: "Mozilla/5.0", visited_at: "2026-03-08 19:00:00" },
+    
   ];
 
   const insertVisitor = db.prepare(`
