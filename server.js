@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS products (
     price REAL NOT NULL,
     stock INTEGER NOT NULL,
     brand TEXT,
-    images TEXT, -- JSON array of image URLs
+    images TEXT,
     status TEXT DEFAULT 'active',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
