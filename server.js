@@ -15,7 +15,30 @@ app.use(express.json());
 
 // Database Initialization
 const db = new Database("agro.db");
+import Database from "better-sqlite3";
 
+const db = new Database("agro.db");
+
+try {
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS products (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      category TEXT,
+      description TEXT,
+      price REAL,
+      stock INTEGER,
+      images TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  console.log("Database initialized");
+
+} catch (error) {
+  console.error("Database error:", error);
+}
 db.exec(`
 CREATE TABLE IF NOT EXISTS products (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
