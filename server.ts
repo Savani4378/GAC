@@ -9,60 +9,56 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
 app.use(express.json());
 
 // Database Initialization
 const db = new Database("agro.db");
-import Database from "better-sqlite3";
 
-const db = new Database("agro.db");
-
-try {
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS products (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      category TEXT,
-      description TEXT,
-      price REAL,
-      stock INTEGER,
-      images TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
-  console.log("Database initialized");
-
-} catch (error) {
-  console.error("Database error:", error);
-}
+// Create tables
 db.exec(`
-CREATE TABLE IF NOT EXISTS products (
- id INTEGER PRIMARY KEY AUTOINCREMENT,
- name TEXT NOT NULL,
- category TEXT,
- description TEXT,
- price REAL,
- stock INTEGER,
- images TEXT,
- created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    role TEXT DEFAULT 'customer',
+    phone TEXT,
+    address TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
 
+  CREATE TABLE IF NOT EXISTS categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS subcategories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES categories(id),
+    UNIQUE(category_id, name)
+  );
 
   CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    category TEXT NOT NULL,
+    category TEXT, -- Kept for migration compatibility
+    category_id INTEGER,
+    subcategory_id INTEGER,
     description TEXT,
     price REAL NOT NULL,
     stock INTEGER NOT NULL,
     brand TEXT,
-    images TEXT,
+    images TEXT, -- JSON array of image URLs
     status TEXT DEFAULT 'active',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES categories(id),
+    FOREIGN KEY (subcategory_id) REFERENCES subcategories(id)
   );
 
   CREATE TABLE IF NOT EXISTS banners (
@@ -130,16 +126,46 @@ CREATE TABLE IF NOT EXISTS products (
     whatsapp TEXT,
     whatsapp_visible INTEGER DEFAULT 1,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  `);
+  );
+`);
 
+// Add columns if they don't exist (for existing databases)
+try { db.prepare("ALTER TABLE social_links ADD COLUMN facebook_visible INTEGER DEFAULT 1").run(); } catch(e) {}
+try { db.prepare("ALTER TABLE social_links ADD COLUMN instagram_visible INTEGER DEFAULT 1").run(); } catch(e) {}
+try { db.prepare("ALTER TABLE social_links ADD COLUMN twitter_visible INTEGER DEFAULT 1").run(); } catch(e) {}
+try { db.prepare("ALTER TABLE social_links ADD COLUMN whatsapp_visible INTEGER DEFAULT 1").run(); } catch(e) {}
 
-  try { db.prepare("ALTER TABLE social_links ADD COLUMN facebook_visible INTEGER DEFAULT 1").run(); } catch(e) {}
-  try { db.prepare("ALTER TABLE social_links ADD COLUMN instagram_visible INTEGER DEFAULT 1").run(); } catch(e) {}
-  try { db.prepare("ALTER TABLE social_links ADD COLUMN twitter_visible INTEGER DEFAULT 1").run(); } catch(e) {}
-  try { db.prepare("ALTER TABLE social_links ADD COLUMN whatsapp_visible INTEGER DEFAULT 1").run(); } catch(e) {}
-);
+try { db.prepare("ALTER TABLE products ADD COLUMN category_id INTEGER").run(); } catch(e) {}
+try { db.prepare("ALTER TABLE products ADD COLUMN subcategory_id INTEGER").run(); } catch(e) {}
 
+// Migrate old category string to category_id if needed
+const categoriesExist = db.prepare("SELECT COUNT(*) as count FROM categories").get().count;
+if (categoriesExist === 0) {
+  const defaultCategories = ["Seeds", "Fertilizers", "Pesticides"];
+  const insertCat = db.prepare("INSERT INTO categories (name) VALUES (?)");
+  defaultCategories.forEach(cat => insertCat.run(cat));
+  
+  // Seed subcategories
+  const seedsId = db.prepare("SELECT id FROM categories WHERE name = 'Seeds'").get().id;
+  const fertId = db.prepare("SELECT id FROM categories WHERE name = 'Fertilizers'").get().id;
+  const pestId = db.prepare("SELECT id FROM categories WHERE name = 'Pesticides'").get().id;
+  
+  const insertSub = db.prepare("INSERT INTO subcategories (category_id, name) VALUES (?, ?)");
+  ["Vegetable Seeds", "Fruit Seeds", "Cereal Seeds"].forEach(s => insertSub.run(seedsId, s));
+  ["Organic Fertilizers", "Chemical Fertilizers", "Liquid Fertilizers"].forEach(s => insertSub.run(fertId, s));
+  ["Insecticides", "Herbicides", "Fungicides"].forEach(s => insertSub.run(pestId, s));
+  
+  // Update existing products to link to categories
+  const products = db.prepare("SELECT id, category FROM products").all();
+  products.forEach(p => {
+    const cat = db.prepare("SELECT id FROM categories WHERE name = ?").get(p.category);
+    if (cat) {
+      db.prepare("UPDATE products SET category_id = ? WHERE id = ?").run(cat.id, p.id);
+    }
+  });
+}
 
+// Seed About and Contact if not exists
 const aboutExists = db.prepare("SELECT COUNT(*) as count FROM about_content").get().count;
 if (aboutExists === 0) {
   db.prepare("INSERT INTO about_content (content) VALUES (?)").run(
@@ -172,7 +198,7 @@ if (!adminExists) {
   db.prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)").run(
     "Admin",
     "gangeshwaragrocenter@gmail.com",
-    "Admin@!#123",
+    "admin123",
     "admin"
   );
 }
@@ -182,7 +208,15 @@ const visitorsExist = db.prepare("SELECT COUNT(*) as count FROM visitors").get()
 if (visitorsExist === 0) {
   const seedVisitors = [
     { name: "Guest 1", location: "Ahmedabad", ip_address: "192.168.1.1", user_agent: "Mozilla/5.0", visited_at: "2026-03-01 10:00:00" },
-    
+    { name: "Guest 2", location: "Surat", ip_address: "192.168.1.2", user_agent: "Mozilla/5.0", visited_at: "2026-03-02 11:00:00" },
+    { name: "Guest 3", location: "Ahmedabad", ip_address: "192.168.1.3", user_agent: "Mozilla/5.0", visited_at: "2026-03-03 12:00:00" },
+    { name: "Guest 4", location: "Palanpur", ip_address: "192.168.1.4", user_agent: "Mozilla/5.0", visited_at: "2026-03-04 13:00:00" },
+    { name: "Guest 5", location: "Ahmedabad", ip_address: "192.168.1.5", user_agent: "Mozilla/5.0", visited_at: "2026-03-05 14:00:00" },
+    { name: "Guest 6", location: "Rajkot", ip_address: "192.168.1.6", user_agent: "Mozilla/5.0", visited_at: "2026-03-06 15:00:00" },
+    { name: "Guest 7", location: "Surat", ip_address: "192.168.1.7", user_agent: "Mozilla/5.0", visited_at: "2026-03-07 16:00:00" },
+    { name: "Guest 8", location: "Ahmedabad", ip_address: "192.168.1.8", user_agent: "Mozilla/5.0", visited_at: "2026-03-08 17:00:00" },
+    { name: "Guest 9", location: "Mehsana", ip_address: "192.168.1.9", user_agent: "Mozilla/5.0", visited_at: "2026-03-08 18:00:00" },
+    { name: "Guest 10", location: "Ahmedabad", ip_address: "192.168.1.10", user_agent: "Mozilla/5.0", visited_at: "2026-03-08 19:00:00" },
   ];
 
   const insertVisitor = db.prepare(`
@@ -208,12 +242,13 @@ if (productsExist === 0) {
   ];
 
   const insertProduct = db.prepare(`
-    INSERT INTO products (name, category, description, price, stock, brand, images)
+    INSERT INTO products (name, category_id, description, price, stock, brand, images)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
 
   seedProducts.forEach(p => {
-    insertProduct.run(p.name, p.category, p.description, p.price, p.stock, p.brand, JSON.stringify(p.images));
+    const cat = db.prepare("SELECT id FROM categories WHERE name = ?").get(p.category);
+    insertProduct.run(p.name, cat ? cat.id : null, p.description, p.price, p.stock, p.brand, JSON.stringify(p.images));
   });
 }
 
@@ -288,30 +323,107 @@ app.post("/api/auth/register", (req, res) => {
 
 // Products
 app.get("/api/products", (req, res) => {
-  const products = db.prepare("SELECT * FROM products").all();
+  const products = db.prepare(`
+    SELECT products.*, categories.name as category_name, subcategories.name as subcategory_name
+    FROM products
+    LEFT JOIN categories ON products.category_id = categories.id
+    LEFT JOIN subcategories ON products.subcategory_id = subcategories.id
+  `).all();
   res.json(products.map(p => ({ ...p, images: JSON.parse(p.images || '[]') })));
 });
 
 app.post("/api/products", (req, res) => {
-  const { name, category, description, price, stock, brand, images, status } = req.body;
+  const { name, category_id, subcategory_id, description, price, stock, brand, images, status } = req.body;
   const result = db.prepare(`
-    INSERT INTO products (name, category, description, price, stock, brand, images, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(name, category, description, price, stock, brand, JSON.stringify(images || []), status || 'active');
+    INSERT INTO products (name, category_id, subcategory_id, description, price, stock, brand, images, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(name, category_id, subcategory_id, description, price, stock, brand, JSON.stringify(images || []), status || 'active');
   res.json({ id: result.lastInsertRowid });
 });
 
 app.put("/api/products/:id", (req, res) => {
-  const { name, category, description, price, stock, brand, images, status } = req.body;
+  const { name, category_id, subcategory_id, description, price, stock, brand, images, status } = req.body;
   db.prepare(`
-    UPDATE products SET name = ?, category = ?, description = ?, price = ?, stock = ?, brand = ?, images = ?, status = ?
+    UPDATE products SET name = ?, category_id = ?, subcategory_id = ?, description = ?, price = ?, stock = ?, brand = ?, images = ?, status = ?
     WHERE id = ?
-  `).run(name, category, description, price, stock, brand, JSON.stringify(images || []), status, req.params.id);
+  `).run(name, category_id, subcategory_id, description, price, stock, brand, JSON.stringify(images || []), status, req.params.id);
   res.json({ success: true });
 });
 
 app.delete("/api/products/:id", (req, res) => {
   db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
+  res.json({ success: true });
+});
+
+// Categories
+app.get("/api/categories", (req, res) => {
+  const categories = db.prepare("SELECT * FROM categories").all();
+  res.json(categories);
+});
+
+app.post("/api/categories", (req, res) => {
+  const { name } = req.body;
+  try {
+    const result = db.prepare("INSERT INTO categories (name) VALUES (?)").run(name);
+    res.json({ id: result.lastInsertRowid });
+  } catch (e) {
+    res.status(400).json({ error: "Category already exists" });
+  }
+});
+
+app.put("/api/categories/:id", (req, res) => {
+  const { name } = req.body;
+  try {
+    db.prepare("UPDATE categories SET name = ? WHERE id = ?").run(name, req.params.id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(400).json({ error: "Category name already exists" });
+  }
+});
+
+app.delete("/api/categories/:id", (req, res) => {
+  db.prepare("DELETE FROM subcategories WHERE category_id = ?").run(req.params.id);
+  db.prepare("DELETE FROM categories WHERE id = ?").run(req.params.id);
+  res.json({ success: true });
+});
+
+// Subcategories
+app.get("/api/subcategories", (req, res) => {
+  const subcategories = db.prepare(`
+    SELECT subcategories.*, categories.name as category_name
+    FROM subcategories
+    JOIN categories ON subcategories.category_id = categories.id
+  `).all();
+  res.json(subcategories);
+});
+
+app.get("/api/categories/:id/subcategories", (req, res) => {
+  const subcategories = db.prepare("SELECT * FROM subcategories WHERE category_id = ?").all(req.params.id);
+  res.json(subcategories);
+});
+
+app.post("/api/subcategories", (req, res) => {
+  const { category_id, name } = req.body;
+  try {
+    const result = db.prepare("INSERT INTO subcategories (category_id, name) VALUES (?, ?)").run(category_id, name);
+    res.json({ id: result.lastInsertRowid });
+  } catch (e) {
+    res.status(400).json({ error: "Subcategory already exists in this category" });
+  }
+});
+
+app.put("/api/subcategories/:id", (req, res) => {
+  const { category_id, name } = req.body;
+  try {
+    db.prepare("UPDATE subcategories SET category_id = ?, name = ? WHERE id = ?").run(category_id, name, req.params.id);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(400).json({ error: "Subcategory name already exists in this category" });
+  }
+});
+
+app.delete("/api/subcategories/:id", (req, res) => {
+  db.prepare("DELETE FROM subcategories WHERE id = ?").run(req.params.id);
   res.json({ success: true });
 });
 

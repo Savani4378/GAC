@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
-import { User, Users, Menu, X, Leaf, Sprout, Droplets, Bug, Trash2, Plus, Edit, LogOut, ChevronRight, Star, Mail, Phone, Search, ShoppingBag, Image as ImageIcon, LayoutDashboard, Shield, BarChart3, PieChart as PieChartIcon, Activity, Eye, EyeOff, Facebook, Instagram, Twitter, MapPin, Clock } from 'lucide-react';
+import { User, Users, Menu, X, Leaf, Sprout, Droplets, Bug, Trash2, Plus, Edit, LogOut, ChevronRight, Star, Mail, Phone, Search, ShoppingBag, Image as ImageIcon, LayoutDashboard, Shield, BarChart3, PieChart as PieChartIcon, Activity, Eye, EyeOff, Facebook, Instagram, Twitter, MapPin, Clock, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
@@ -11,7 +11,10 @@ import {
 interface Product {
   id: number;
   name: string;
-  category: string;
+  category_id: number;
+  subcategory_id: number;
+  category_name?: string;
+  subcategory_name?: string;
   description: string;
   price: number;
   stock: number;
@@ -19,6 +22,20 @@ interface Product {
   images: string[];
   status: string;
   note?: string;
+}
+
+interface Category {
+  id: number;
+  name: string;
+  created_at: string;
+}
+
+interface Subcategory {
+  id: number;
+  category_id: number;
+  category_name?: string;
+  name: string;
+  created_at: string;
 }
 
 interface Banner {
@@ -50,7 +67,7 @@ const ScrollToTop = () => {
   return null;
 };
 
-const Navbar = ({ user, onLogout, products, wishlistCount, totalPrice }: { user: any, onLogout: () => void, products: Product[], wishlistCount: number, totalPrice: number }) => {
+const Navbar = ({ user, onLogout, products, wishlistCount, totalPrice, categories }: { user: any, onLogout: () => void, products: Product[], wishlistCount: number, totalPrice: number, categories: Category[] }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [isServicesOpen, setIsServicesOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,11 +92,14 @@ const Navbar = ({ user, onLogout, products, wishlistCount, totalPrice }: { user:
     { name: 'Contact', path: '/contact' },
   ];
 
-  const serviceLinks = [
-    { name: 'Seeds', path: '/products/Seeds', icon: <Sprout className="w-4 h-4" /> },
-    { name: 'Fertilizers', path: '/products/Fertilizers', icon: <Droplets className="w-4 h-4" /> },
-    { name: 'Pesticides', path: '/products/Pesticides', icon: <Bug className="w-4 h-4" /> },
-  ];
+  const serviceLinks = (categories || []).map(cat => ({
+    name: cat.name,
+    path: `/products/${cat.name}`,
+    icon: cat.name === 'Seeds' ? <Sprout className="w-4 h-4" /> : 
+          cat.name === 'Fertilizers' ? <Droplets className="w-4 h-4" /> : 
+          cat.name === 'Pesticides' ? <Bug className="w-4 h-4" /> : 
+          <Leaf className="w-4 h-4" />
+  }));
 
   const suggestions = searchQuery.trim() 
     ? products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5)
@@ -154,7 +174,7 @@ const Navbar = ({ user, onLogout, products, wishlistCount, totalPrice }: { user:
                       <img src={product.images[0]} alt="" className="w-8 h-8 rounded object-cover" referrerPolicy="no-referrer" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">{product.name}</p>
-                        <p className="text-xs text-gray-400">{product.category}</p>
+                        <p className="text-xs text-gray-400">{product.category_name}</p>
                       </div>
                     </button>
                   ))}
@@ -350,7 +370,7 @@ const Navbar = ({ user, onLogout, products, wishlistCount, totalPrice }: { user:
   );
 };
 
-const Footer = ({ about, contact, socialLinks }: { about: any, contact: any, socialLinks: any }) => (
+const Footer = ({ about, contact, socialLinks, categories }: { about: any, contact: any, socialLinks: any, categories: Category[] }) => (
   <footer className="bg-[#0a1a0a] text-white pt-20 pb-10 relative overflow-hidden">
     {/* Subtle background decoration */}
     <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -mr-48 -mt-48"></div>
@@ -401,9 +421,9 @@ const Footer = ({ about, contact, socialLinks }: { about: any, contact: any, soc
           <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-8">Quick Links</h3>
           <ul className="space-y-4 text-gray-400 text-sm">
             <li><Link to="/" className="hover:text-white hover:translate-x-1 inline-block transition-all">Home</Link></li>
-            <li><Link to="/products/Seeds" className="hover:text-white hover:translate-x-1 inline-block transition-all">Seeds</Link></li>
-            <li><Link to="/products/Fertilizers" className="hover:text-white hover:translate-x-1 inline-block transition-all">Fertilizers</Link></li>
-            <li><Link to="/products/Pesticides" className="hover:text-white hover:translate-x-1 inline-block transition-all">Pesticides</Link></li>
+            {categories.map(cat => (
+              <li key={cat.id}><Link to={`/products/${cat.name}`} className="hover:text-white hover:translate-x-1 inline-block transition-all">{cat.name}</Link></li>
+            ))}
           </ul>
         </div>
 
@@ -492,7 +512,7 @@ const ProductCard = ({ product, onWishlistToggle, isInWishlist }: { product: Pro
         referrerPolicy="no-referrer"
       />
       <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-[10px] font-bold text-primary uppercase tracking-wider">
-        {product.category}
+        {product.category_name}
       </div>
     </Link>
     <div className="p-5">
@@ -627,7 +647,7 @@ const Home = ({ products, banners, onWishlistToggle, wishlist }: { products: Pro
 
 // --- Main App Component ---
 
-const AddProductPage = ({ setProducts, products, user }: any) => {
+const AddProductPage = ({ setProducts, products, user, categories, subcategories }: any) => {
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -642,7 +662,8 @@ const AddProductPage = ({ setProducts, products, user }: any) => {
   const isEditing = !!id;
   const [formData, setFormData] = useState({
     name: '',
-    category: 'Seeds',
+    category_id: '',
+    subcategory_id: '',
     price: '',
     stock: '',
     brand: '',
@@ -656,7 +677,8 @@ const AddProductPage = ({ setProducts, products, user }: any) => {
       if (product) {
         setFormData({
           name: product.name,
-          category: product.category,
+          category_id: String(product.category_id || ''),
+          subcategory_id: String(product.subcategory_id || ''),
           price: String(product.price),
           stock: String(product.stock),
           brand: product.brand,
@@ -664,8 +686,23 @@ const AddProductPage = ({ setProducts, products, user }: any) => {
           images: product.images
         });
       }
+    } else if (!isEditing && categories.length > 0) {
+      setFormData(prev => ({ ...prev, category_id: String(categories[0].id) }));
     }
-  }, [id, products, isEditing]);
+  }, [id, products, isEditing, categories]);
+
+  const filteredSubcategories = subcategories.filter((s: any) => s.category_id === Number(formData.category_id));
+
+  useEffect(() => {
+    if (formData.category_id && !isEditing) {
+      const subs = subcategories.filter((s: any) => s.category_id === Number(formData.category_id));
+      if (subs.length > 0) {
+        setFormData(prev => ({ ...prev, subcategory_id: String(subs[0].id) }));
+      } else {
+        setFormData(prev => ({ ...prev, subcategory_id: '' }));
+      }
+    }
+  }, [formData.category_id, subcategories, isEditing]);
 
   const handleAddImage = () => {
     setFormData({ ...formData, images: [...formData.images, ''] });
@@ -693,6 +730,8 @@ const AddProductPage = ({ setProducts, products, user }: any) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...formData,
+        category_id: Number(formData.category_id),
+        subcategory_id: formData.subcategory_id ? Number(formData.subcategory_id) : null,
         price: Number(formData.price),
         stock: Number(formData.stock),
         images: formData.images.filter(img => img.trim() !== ''),
@@ -702,18 +741,30 @@ const AddProductPage = ({ setProducts, products, user }: any) => {
     const data = await res.json();
 
     if (isEditing) {
+      const cat = categories.find((c: any) => c.id === Number(formData.category_id));
+      const sub = subcategories.find((s: any) => s.id === Number(formData.subcategory_id));
       setProducts((prev: any) => prev.map((p: any) => p.id === Number(id) ? { 
         ...formData, 
         id: Number(id), 
+        category_id: Number(formData.category_id),
+        subcategory_id: formData.subcategory_id ? Number(formData.subcategory_id) : null,
+        category_name: cat?.name,
+        subcategory_name: sub?.name,
         price: Number(formData.price), 
         stock: Number(formData.stock),
         images: formData.images.filter(img => img.trim() !== '')
       } : p));
       navigate('/admin');
     } else if (data.id) {
+      const cat = categories.find((c: any) => c.id === Number(formData.category_id));
+      const sub = subcategories.find((s: any) => s.id === Number(formData.subcategory_id));
       const newProd = { 
         ...formData, 
         id: data.id, 
+        category_id: Number(formData.category_id),
+        subcategory_id: formData.subcategory_id ? Number(formData.subcategory_id) : null,
+        category_name: cat?.name,
+        subcategory_name: sub?.name,
         price: Number(formData.price), 
         stock: Number(formData.stock),
         images: formData.images.filter(img => img.trim() !== '')
@@ -728,17 +779,36 @@ const AddProductPage = ({ setProducts, products, user }: any) => {
       <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
         <h2 className="text-2xl font-bold mb-8">{isEditing ? 'Edit Product' : 'Add New Product'}</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-bold mb-2">Product Name</label>
+            <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-primary" required />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-bold mb-2">Product Name</label>
-              <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-primary" required />
+              <label className="block text-sm font-bold mb-2">Category</label>
+              <select 
+                value={formData.category_id} 
+                onChange={e => setFormData({ ...formData, category_id: e.target.value })} 
+                className="w-full px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-primary"
+                required
+              >
+                <option value="">Select Category</option>
+                {categories.map((cat: any) => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
             </div>
             <div>
-              <label className="block text-sm font-bold mb-2">Category</label>
-              <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="w-full px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-primary">
-                <option>Seeds</option>
-                <option>Fertilizers</option>
-                <option>Pesticides</option>
+              <label className="block text-sm font-bold mb-2">Subcategory</label>
+              <select 
+                value={formData.subcategory_id} 
+                onChange={e => setFormData({ ...formData, subcategory_id: e.target.value })} 
+                className="w-full px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-primary"
+              >
+                <option value="">Select Subcategory</option>
+                {filteredSubcategories.map((sub: any) => (
+                  <option key={sub.id} value={sub.id}>{sub.name}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -993,6 +1063,8 @@ const ContactPage = ({ contact, socialLinks }: { contact: any, socialLinks: any 
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [wishlist, setWishlist] = useState<Product[]>([]);
   const [about, setAbout] = useState<any>(null);
   const [contact, setContact] = useState<any>(null);
@@ -1107,12 +1179,14 @@ export default function App() {
     const fetchData = async () => {
       setError(null);
       try {
-        const [prodRes, banRes, aboutRes, contactRes, socialRes] = await Promise.all([
+        const [prodRes, banRes, aboutRes, contactRes, socialRes, catRes, subRes] = await Promise.all([
           fetch('/api/products'),
           fetch('/api/banners'),
           fetch('/api/about'),
           fetch('/api/contact'),
-          fetch('/api/social-links')
+          fetch('/api/social-links'),
+          fetch('/api/categories'),
+          fetch('/api/subcategories')
         ]);
         
         if (!prodRes.ok) throw new Error('Failed to load products. Please try again later.');
@@ -1120,17 +1194,24 @@ export default function App() {
         if (!aboutRes.ok) throw new Error('Failed to load about content.');
         if (!contactRes.ok) throw new Error('Failed to load contact info.');
         if (!socialRes.ok) throw new Error('Failed to load social links.');
+        if (!catRes.ok) throw new Error('Failed to load categories.');
+        if (!subRes.ok) throw new Error('Failed to load subcategories.');
 
         const prodData = await prodRes.json();
         const banData = await banRes.json();
         const aboutData = await aboutRes.json();
         const contactData = await contactRes.json();
         const socialData = await socialRes.json();
+        const catData = await catRes.json();
+        const subData = await subRes.json();
 
         setProducts(prodData);
         setBanners(banData);
         setAbout(aboutData);
         setContact(contactData);
+        setSocialLinks(socialData);
+        setCategories(catData);
+        setSubcategories(subData);
         setSocialLinks(socialData);
 
         const savedUser = localStorage.getItem('agro_user');
@@ -1184,7 +1265,7 @@ export default function App() {
     <Router>
       <ScrollToTop />
       <div className="min-h-screen flex flex-col font-sans">
-        <Navbar user={user} onLogout={handleLogout} products={products} wishlistCount={wishlist.length} totalPrice={totalPrice} />
+        <Navbar user={user} onLogout={handleLogout} products={products} wishlistCount={wishlist.length} totalPrice={totalPrice} categories={categories} />
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<Home products={products} banners={banners} onWishlistToggle={handleWishlistToggle} wishlist={wishlist} />} />
@@ -1198,13 +1279,13 @@ export default function App() {
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/wishlist" element={<WishlistPage wishlist={wishlist} onWishlistToggle={handleWishlistToggle} onClearWishlist={handleClearWishlist} onUpdateNote={handleUpdateWishlistNote} />} />
-            <Route path="/admin/*" element={<AdminDashboard products={products} setProducts={setProducts} banners={banners} setBanners={setBanners} user={user} setAbout={setAbout} setContact={setContact} setSocialLinks={setSocialLinks} />} />
-            <Route path="/admin/add-product" element={<AddProductPage setProducts={setProducts} products={products} user={user} />} />
-            <Route path="/admin/edit-product/:id" element={<AddProductPage setProducts={setProducts} products={products} user={user} />} />
+            <Route path="/admin/*" element={<AdminDashboard products={products} setProducts={setProducts} banners={banners} setBanners={setBanners} user={user} setAbout={setAbout} setContact={setContact} setSocialLinks={setSocialLinks} categories={categories} setCategories={setCategories} subcategories={subcategories} setSubcategories={setSubcategories} />} />
+            <Route path="/admin/add-product" element={<AddProductPage setProducts={setProducts} products={products} user={user} categories={categories} subcategories={subcategories} />} />
+            <Route path="/admin/edit-product/:id" element={<AddProductPage setProducts={setProducts} products={products} user={user} categories={categories} subcategories={subcategories} />} />
             <Route path="/admin/add-banner" element={<AddBannerPage setBanners={setBanners} user={user} />} />
           </Routes>
         </main>
-        <Footer about={about} contact={contact} socialLinks={socialLinks} />
+        <Footer about={about} contact={contact} socialLinks={socialLinks} categories={categories} />
       </div>
     </Router>
   );
@@ -1568,7 +1649,7 @@ const ProductsPage = ({ products, onWishlistToggle, wishlist }: { products: Prod
   const searchParams = new URLSearchParams(location.search);
   const searchQuery = searchParams.get('search');
 
-  let filtered = category === 'all' ? products : products.filter(p => p.category === category);
+  let filtered = category === 'all' ? products : products.filter(p => p.category_name === category);
   
   // Filter only active products for customers
   filtered = filtered.filter(p => p.status === 'active');
@@ -1679,7 +1760,9 @@ const ProductDetailsPage = ({ products, user, onWishlistToggle, wishlist }: { pr
         </div>
         <div className="space-y-8">
           <div>
-            <span className="text-primary font-bold uppercase tracking-widest text-xs">{product.category}</span>
+            <span className="text-primary font-bold uppercase tracking-widest text-xs">
+              {product.category_name} {product.subcategory_name ? `› ${product.subcategory_name}` : ''}
+            </span>
             <h1 className="text-4xl font-black text-gray-900 mt-2">{product.name}</h1>
             <p className="text-gray-500 mt-4 text-lg leading-relaxed">{product.description}</p>
           </div>
@@ -1703,7 +1786,7 @@ const ProductDetailsPage = ({ products, user, onWishlistToggle, wishlist }: { pr
             <h3 className="font-bold mb-4">Product Details</h3>
             <ul className="space-y-2 text-sm text-gray-600">
               <li><span className="font-semibold text-gray-900">Brand:</span> {product.brand}</li>
-              <li><span className="font-semibold text-gray-900">Category:</span> {product.category}</li>
+              <li><span className="font-semibold text-gray-900">Category:</span> {product.category_name} {product.subcategory_name ? `› ${product.subcategory_name}` : ''}</li>
               <li><span className="font-semibold text-gray-900">Stock:</span> {product.stock} units</li>
             </ul>
           </div>
@@ -1988,7 +2071,7 @@ const LoginPage = ({ setUser }: { setUser: any }) => {
   );
 };
 
-const AdminDashboard = ({ products, setProducts, banners, setBanners, user, setAbout, setContact, setSocialLinks }: any) => {
+const AdminDashboard = ({ products, setProducts, banners, setBanners, user, setAbout, setContact, setSocialLinks, categories, setCategories, subcategories, setSubcategories }: any) => {
   const navigate = useNavigate();
   
   useEffect(() => {
@@ -2013,6 +2096,11 @@ const AdminDashboard = ({ products, setProducts, banners, setBanners, user, setA
     whatsapp: '', whatsapp_visible: 1 
   });
 
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [newSubcategory, setNewSubcategory] = useState({ category_id: '', name: '' });
+  const [editingSubcategory, setEditingSubcategory] = useState<any>(null);
+
   useEffect(() => {
     if (activeTab === 'visitors') {
       fetchVisitors();
@@ -2026,6 +2114,128 @@ const AdminDashboard = ({ products, setProducts, banners, setBanners, user, setA
       fetchSocial();
     }
   }, [activeTab]);
+
+  const handleAddCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCategoryName.trim()) return;
+    try {
+      const res = await fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCategoryName })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCategories([...categories, { id: data.id, name: newCategoryName }]);
+        setNewCategoryName('');
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      alert('Failed to add category');
+    }
+  };
+
+  const handleUpdateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCategory.name.trim()) return;
+    try {
+      const res = await fetch(`/api/categories/${editingCategory.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editingCategory.name })
+      });
+      if (res.ok) {
+        setCategories(categories.map((c: any) => c.id === editingCategory.id ? editingCategory : c));
+        setEditingCategory(null);
+      } else {
+        const data = await res.json();
+        alert(data.error);
+      }
+    } catch (err) {
+      alert('Failed to update category');
+    }
+  };
+
+  const handleDeleteCategory = async (id: number) => {
+    if (!confirm('Deleting a category will also delete all its subcategories. Continue?')) return;
+    try {
+      const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setCategories(categories.filter((c: any) => c.id !== id));
+        setSubcategories(subcategories.filter((s: any) => s.category_id !== id));
+      }
+    } catch (err) {
+      alert('Failed to delete category');
+    }
+  };
+
+  const handleAddSubcategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSubcategory.name.trim() || !newSubcategory.category_id) return;
+    try {
+      const res = await fetch('/api/subcategories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          category_id: Number(newSubcategory.category_id), 
+          name: newSubcategory.name 
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const cat = categories.find((c: any) => c.id === Number(newSubcategory.category_id));
+        setSubcategories([...subcategories, { 
+          id: data.id, 
+          category_id: Number(newSubcategory.category_id), 
+          category_name: cat?.name,
+          name: newSubcategory.name 
+        }]);
+        setNewSubcategory({ ...newSubcategory, name: '' });
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      alert('Failed to add subcategory');
+    }
+  };
+
+  const handleUpdateSubcategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSubcategory.name.trim() || !editingSubcategory.category_id) return;
+    try {
+      const res = await fetch(`/api/subcategories/${editingSubcategory.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          category_id: Number(editingSubcategory.category_id), 
+          name: editingSubcategory.name 
+        })
+      });
+      if (res.ok) {
+        const cat = categories.find((c: any) => c.id === Number(editingSubcategory.category_id));
+        setSubcategories(subcategories.map((s: any) => s.id === editingSubcategory.id ? { ...editingSubcategory, category_name: cat?.name } : s));
+        setEditingSubcategory(null);
+      } else {
+        const data = await res.json();
+        alert(data.error);
+      }
+    } catch (err) {
+      alert('Failed to update subcategory');
+    }
+  };
+
+  const handleDeleteSubcategory = async (id: number) => {
+    if (!confirm('Delete this subcategory?')) return;
+    try {
+      const res = await fetch(`/api/subcategories/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setSubcategories(subcategories.filter((s: any) => s.id !== id));
+      }
+    } catch (err) {
+      alert('Failed to delete subcategory');
+    }
+  };
 
   const fetchSocial = async () => {
     setLoading(true);
@@ -2283,6 +2493,10 @@ const AdminDashboard = ({ products, setProducts, banners, setBanners, user, setA
             <ShoppingBag className="w-5 h-5" />
             <span>Products</span>
           </button>
+          <button onClick={() => setActiveTab('categories')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all ${activeTab === 'categories' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-600 hover:bg-gray-100'}`}>
+            <Layers className="w-5 h-5" />
+            <span>Categories</span>
+          </button>
           <button onClick={() => setActiveTab('banners')} className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all ${activeTab === 'banners' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-gray-600 hover:bg-gray-100'}`}>
             <ImageIcon className="w-5 h-5" />
             <span>Banners</span>
@@ -2318,6 +2532,99 @@ const AdminDashboard = ({ products, setProducts, banners, setBanners, user, setA
             </div>
           )}
 
+          {!loading && activeTab === 'categories' && (
+            <div className="space-y-12">
+              <div>
+                <h3 className="text-2xl font-bold mb-6">Manage Categories</h3>
+                <form onSubmit={editingCategory ? handleUpdateCategory : handleAddCategory} className="flex gap-4 mb-8">
+                  <input 
+                    type="text" 
+                    value={editingCategory ? editingCategory.name : newCategoryName} 
+                    onChange={e => editingCategory ? setEditingCategory({ ...editingCategory, name: e.target.value }) : setNewCategoryName(e.target.value)} 
+                    placeholder="Category Name" 
+                    className="flex-grow px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-primary"
+                    required
+                  />
+                  <button type="submit" className="bg-primary text-white px-6 py-2 rounded-xl font-bold">
+                    {editingCategory ? 'Update' : 'Add Category'}
+                  </button>
+                  {editingCategory && (
+                    <button type="button" onClick={() => setEditingCategory(null)} className="bg-gray-100 text-gray-600 px-6 py-2 rounded-xl font-bold">Cancel</button>
+                  )}
+                </form>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {categories.map((cat: any) => (
+                    <div key={cat.id} className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex justify-between items-center">
+                      <span className="font-bold">{cat.name}</span>
+                      <div className="flex space-x-2">
+                        <button onClick={() => setEditingCategory(cat)} className="p-2 text-gray-400 hover:text-primary"><Edit className="w-4 h-4" /></button>
+                        <button onClick={() => handleDeleteCategory(cat.id)} className="p-2 text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-12 border-t border-gray-100">
+                <h3 className="text-2xl font-bold mb-6">Manage Subcategories</h3>
+                <form onSubmit={editingSubcategory ? handleUpdateSubcategory : handleAddSubcategory} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                  <select 
+                    value={editingSubcategory ? editingSubcategory.category_id : newSubcategory.category_id} 
+                    onChange={e => editingSubcategory ? setEditingSubcategory({ ...editingSubcategory, category_id: e.target.value }) : setNewSubcategory({ ...newSubcategory, category_id: e.target.value })} 
+                    className="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-primary"
+                    required
+                  >
+                    <option value="">Select Category</option>
+                    {categories.map((cat: any) => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                  <input 
+                    type="text" 
+                    value={editingSubcategory ? editingSubcategory.name : newSubcategory.name} 
+                    onChange={e => editingSubcategory ? setEditingSubcategory({ ...editingSubcategory, name: e.target.value }) : setNewSubcategory({ ...newSubcategory, name: e.target.value })} 
+                    placeholder="Subcategory Name" 
+                    className="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:border-primary"
+                    required
+                  />
+                  <div className="flex gap-2">
+                    <button type="submit" className="flex-grow bg-primary text-white px-6 py-2 rounded-xl font-bold">
+                      {editingSubcategory ? 'Update' : 'Add Subcategory'}
+                    </button>
+                    {editingSubcategory && (
+                      <button type="button" onClick={() => setEditingSubcategory(null)} className="bg-gray-100 text-gray-600 px-6 py-2 rounded-xl font-bold">Cancel</button>
+                    )}
+                  </div>
+                </form>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-gray-400 text-sm">
+                        <th className="pb-4 font-medium">Subcategory</th>
+                        <th className="pb-4 font-medium">Parent Category</th>
+                        <th className="pb-4 font-medium text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {subcategories.map((sub: any) => (
+                        <tr key={sub.id}>
+                          <td className="py-4 font-bold">{sub.name}</td>
+                          <td className="py-4 text-sm text-gray-600">{sub.category_name}</td>
+                          <td className="py-4 text-right">
+                            <div className="flex justify-end space-x-2">
+                              <button onClick={() => setEditingSubcategory(sub)} className="p-2 text-gray-400 hover:text-primary"><Edit className="w-4 h-4" /></button>
+                              <button onClick={() => handleDeleteSubcategory(sub.id)} className="p-2 text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
           {!loading && activeTab === 'products' && (
             <div className="space-y-8">
               <div className="flex justify-between items-center">
@@ -2346,7 +2653,10 @@ const AdminDashboard = ({ products, setProducts, banners, setBanners, user, setA
                             <span className="font-bold text-gray-900">{p.name}</span>
                           </div>
                         </td>
-                        <td className="py-4 text-sm text-gray-600">{p.category}</td>
+                        <td className="py-4 text-sm text-gray-600">
+                          {p.category_name}
+                          {p.subcategory_name && <span className="text-gray-400 ml-1">› {p.subcategory_name}</span>}
+                        </td>
                         <td className="py-4 font-bold text-primary">₹{p.price}</td>
                         <td className="py-4 text-sm">{p.stock}</td>
                         <td className="py-4">
