@@ -14,6 +14,44 @@ const PORT = 3000;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+// SEO Routes
+app.get("/robots.txt", (req, res) => {
+  res.type("text/plain");
+  res.send(`User-agent: *
+Allow: /
+Sitemap: ${req.protocol}://${req.get("host")}/sitemap.xml`);
+});
+
+app.get("/sitemap.xml", (req, res) => {
+  const products = db.prepare("SELECT id FROM products WHERE status = 'active'").all() as { id: number }[];
+  const categories = db.prepare("SELECT name FROM categories").all() as { name: string }[];
+  
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  
+  let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>${baseUrl}/</loc><priority>1.0</priority></url>
+  <url><loc>${baseUrl}/about</loc><priority>0.8</priority></url>
+  <url><loc>${baseUrl}/contact</loc><priority>0.8</priority></url>
+  <url><loc>${baseUrl}/products/all</loc><priority>0.9</priority></url>`;
+
+  categories.forEach(cat => {
+    sitemap += `
+  <url><loc>${baseUrl}/products/${encodeURIComponent(cat.name)}</loc><priority>0.7</priority></url>`;
+  });
+
+  products.forEach(p => {
+    sitemap += `
+  <url><loc>${baseUrl}/product/${p.id}</loc><priority>0.6</priority></url>`;
+  });
+
+  sitemap += `
+</urlset>`;
+
+  res.type("application/xml");
+  res.send(sitemap);
+});
+
 // Database Initialization
 const db = new Database("agro.db");
 

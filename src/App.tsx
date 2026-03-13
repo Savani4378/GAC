@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { User, Users, Menu, X, Leaf, Sprout, Droplets, Bug, Trash2, Plus, Edit, LogOut, ChevronRight, Star, Mail, Phone, Search, ShoppingBag, Image as ImageIcon, LayoutDashboard, Shield, BarChart3, PieChart as PieChartIcon, Activity, Eye, EyeOff, Facebook, Instagram, Twitter, MapPin, Clock, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import SEO from './components/SEO';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
   PieChart, Pie, Cell, AreaChart, Area, ComposedChart, Line, ScatterChart, Scatter
@@ -267,7 +268,6 @@ const Navbar = ({ user, onLogout, products, wishlistCount, totalPrice, categorie
                 <Star className="w-5 h-5 fill-current" />
                 <span className="text-sm font-bold">{wishlistCount}</span>
               </div>
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider group-hover:text-primary transition-colors">Total: ₹{totalPrice}</span>
             </Link>
 
             {user ? (
@@ -531,18 +531,12 @@ const ProductCard = ({ product, onWishlistToggle, isInWishlist }: { product: Pro
         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
         referrerPolicy="no-referrer"
       />
-      <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-[10px] font-bold text-primary uppercase tracking-wider">
-        {product.category_name}
-      </div>
     </Link>
     <div className="p-5">
       <Link to={`/product/${product.id}`}>
         <h3 className="text-lg font-semibold text-gray-900 mb-1 hover:text-primary transition-colors line-clamp-1">{product.name}</h3>
       </Link>
-      <p className="text-gray-500 text-xs mb-3 line-clamp-2">{product.description}</p>
-      <div className="flex items-center justify-between mt-auto">
-        <span className="text-xl font-bold text-primary">₹{product.price}</span>
-      </div>
+      <p className="text-gray-500 text-xs line-clamp-2">{product.description}</p>
     </div>
   </motion.div>
 );
@@ -565,6 +559,10 @@ const Home = ({ products, banners, onWishlistToggle, wishlist }: { products: Pro
 
   return (
     <div className="space-y-16 pb-20">
+      <SEO 
+        title="Gangeshwar Agro Center | Best Agricultural Products"
+        description="Explore the best quality seeds, fertilizers, and pesticides at Gangeshwar Agro Center. Empowering farmers with sustainable agricultural solutions."
+      />
       {/* Hero Slider */}
       <section className="relative h-[500px] md:h-[600px] overflow-hidden bg-gray-900">
         {activeBanners.length > 0 ? (
@@ -897,6 +895,10 @@ const AddProductPage = ({ setProducts, products, user, categories, subcategories
 const AboutPage = ({ about }: { about: any }) => {
   return (
     <div className="max-w-4xl mx-auto py-20 px-4 space-y-12">
+      <SEO 
+        title="About Us"
+        description="Learn more about Gangeshwar Agro Center, our mission to support farmers, and our commitment to sustainable agriculture since 1995."
+      />
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-black text-gray-900">About Gangeshwar Agro</h1>
         <p className="text-xl text-gray-500">Empowering farmers since 1995</p>
@@ -927,6 +929,10 @@ const AboutPage = ({ about }: { about: any }) => {
 const ContactPage = ({ contact, socialLinks }: { contact: any, socialLinks: any }) => {
   return (
     <div className="max-w-7xl mx-auto py-20 px-4 sm:px-6 lg:px-8">
+      <SEO 
+        title="Contact Us"
+        description="Get in touch with Gangeshwar Agro Center. We are here to help you with your agricultural needs and expert advice."
+      />
       <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
         <h1 className="text-5xl font-black text-gray-900 tracking-tight">Get in Touch</h1>
         <p className="text-lg text-gray-500">Have questions about our products or need agricultural advice? We're here to help you grow.</p>
@@ -1372,7 +1378,7 @@ const WishlistPage = ({ wishlist, onWishlistToggle, onClearWishlist, onUpdateNot
             <Star className="w-10 h-10 text-gray-200" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Your wishlist is empty</h2>
-          <p className="text-gray-500 mb-10 max-w-sm mx-auto">Save items you like to see them here later. We'll help you track the total price of your farming needs.</p>
+          <p className="text-gray-500 mb-10 max-w-sm mx-auto">Save items you like to see them here later. We'll help you track your farming needs.</p>
           <Link to="/products/all" className="bg-primary text-white px-10 py-4 rounded-2xl font-bold hover:bg-primary-dark transition-all shadow-xl shadow-primary/20 inline-block">
             Browse Products
           </Link>
@@ -1683,6 +1689,10 @@ const ProductsPage = ({ products, onWishlistToggle, wishlist }: { products: Prod
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <SEO 
+        title={`${searchQuery ? `Search: ${searchQuery}` : category} Products`}
+        description={`Browse our wide range of ${category} products. Find the best agricultural inputs for your farm.`}
+      />
       <div className="mb-10">
         <h1 className="text-4xl font-black text-gray-900 capitalize">
           {searchQuery ? `Search Results: ${searchQuery}` : category}
@@ -1763,8 +1773,41 @@ const ProductDetailsPage = ({ products, user, onWishlistToggle, wishlist }: { pr
 
   if (!product) return <div className="py-20 text-center">Product not found</div>;
 
+  const jsonLd = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.images,
+    "description": product.description,
+    "brand": {
+      "@type": "Brand",
+      "name": product.brand
+    },
+    "category": product.category_name,
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "INR",
+      "price": product.price,
+      "availability": product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+    },
+    "aggregateRating": reviews.length > 0 ? {
+      "@type": "AggregateRating",
+      "ratingValue": (reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1),
+      "reviewCount": reviews.length
+    } : undefined
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <SEO 
+        title={product.name}
+        description={product.description}
+        image={product.images[0]}
+        type="product"
+      />
+      <script type="application/ld+json">
+        {JSON.stringify(jsonLd)}
+      </script>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
         <div className="space-y-4">
           <div className="aspect-square rounded-3xl overflow-hidden bg-white border border-gray-100">
@@ -1780,17 +1823,8 @@ const ProductDetailsPage = ({ products, user, onWishlistToggle, wishlist }: { pr
         </div>
         <div className="space-y-8">
           <div>
-            <span className="text-primary font-bold uppercase tracking-widest text-xs">
-              {product.category_name} {product.subcategory_name ? `› ${product.subcategory_name}` : ''}
-            </span>
             <h1 className="text-4xl font-black text-gray-900 mt-2">{product.name}</h1>
             <p className="text-gray-500 mt-4 text-lg leading-relaxed">{product.description}</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-4xl font-black text-primary">₹{product.price}</span>
-            <span className={`px-3 py-1 rounded-full text-xs font-bold ${product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-              {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
-            </span>
           </div>
           <div className="pt-8 border-t border-gray-100">
             <button 
@@ -1801,14 +1835,6 @@ const ProductDetailsPage = ({ products, user, onWishlistToggle, wishlist }: { pr
               <span>{isInWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}</span>
             </button>
             <p className="text-center text-xs text-gray-400 mt-4 uppercase tracking-widest font-bold">Secure Checkout Guaranteed</p>
-          </div>
-          <div className="pt-8 border-t border-gray-100">
-            <h3 className="font-bold mb-4">Product Details</h3>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li><span className="font-semibold text-gray-900">Brand:</span> {product.brand}</li>
-              <li><span className="font-semibold text-gray-900">Category:</span> {product.category_name} {product.subcategory_name ? `› ${product.subcategory_name}` : ''}</li>
-              <li><span className="font-semibold text-gray-900">Stock:</span> {product.stock} units</li>
-            </ul>
           </div>
         </div>
       </div>
